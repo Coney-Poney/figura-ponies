@@ -1,0 +1,14 @@
+---List of valid RenderTypes. Used within ModelParts.
+---@alias RenderTypes
+---| 'CUTOUT'
+---| 'CUTOUT_CULL'
+---| 'TRANSLUCENT'
+---| 'TRANSLUCENT_CULL'
+---| 'EMISSIVE'
+---| 'EMISSIVE_SOLID'
+---| 'END_PORTAL'
+---| 'END_GATEWAY'
+---| 'GLINT'
+---| 'GLINT2'
+---| 'LINES'
+---| 'LINES_STRIP'

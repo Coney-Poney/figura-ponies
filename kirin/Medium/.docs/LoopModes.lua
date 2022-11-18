@@ -1,0 +1,5 @@
+---List of valid LoopModes. Used within Blockbench animations.
+---@alias LoopModes
+---| 'LOOP'
+---| 'ONCE'
+---| 'HOLD'

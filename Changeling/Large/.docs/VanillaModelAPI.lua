@@ -1,0 +1,48 @@
+---@diagnostic disable: duplicate-set-field
+---A global API that provides functions to interact with the vanilla player model and its parts. Accessed using the name "vanilla_model".
+---@class VanillaModelAPI
+---@field HEAD VanillaModelPart The head of the player, not including the hat.
+---@field BODY VanillaModelPart The body of the player, not including the outer layer.
+---@field LEFT_ARM VanillaModelPart The left arm of the player, not including the outer layer.
+---@field RIGHT_ARM VanillaModelPart The right arm of the player, not including the outer layer.
+---@field LEFT_LEG VanillaModelPart The left leg of the player, not including the outer layer.
+---@field RIGHT_LEG VanillaModelPart The right leg of the player, not including the outer layer.
+---@field HAT VanillaModelPart The outer layer of the player's head.
+---@field JACKET VanillaModelPart The outer layer of the player's body.
+---@field LEFT_SLEEVE VanillaModelPart The outer layer of the player's left arm.
+---@field RIGHT_SLEEVE VanillaModelPart The outer layer of the player's right arm.
+---@field LEFT_PANTS VanillaModelPart The outer layer of the player's left leg.
+---@field RIGHT_PANTS VanillaModelPart The outer layer of the player's right leg.
+---@field CAPE_MODEL VanillaModelPart The vanilla cape model.
+---@field FAKE_CAPE VanillaModelPart A custom copy of the cape, as attempt of storing its transformations since vanilla cape math is... weird.
+---@field HELMET_ITEM VanillaModelPart The item on the armor head slot.
+---@field HELMET_HEAD VanillaModelPart The head of the helmet model.
+---@field HELMET_HAT VanillaModelPart The hat of the helmet model.
+---@field CHESTPLATE_BODY VanillaModelPart The body of the chestplate model.
+---@field CHESTPLATE_LEFT_ARM VanillaModelPart The left arm of the chestplate model.
+---@field CHESTPLATE_RIGHT_ARM VanillaModelPart The right arm of the chestplate model.
+---@field LEGGINGS_BODY VanillaModelPart The body of the leggings model.
+---@field LEGGINGS_LEFT_LEG VanillaModelPart The left leg of the leggings model.
+---@field LEGGINGS_RIGHT_LEG VanillaModelPart The right leg of the leggings model.
+---@field BOOTS_LEFT_LEG VanillaModelPart The left boot of the boots model.
+---@field BOOTS_RIGHT_LEG VanillaModelPart The right boot of the boots model.
+---@field LEFT_ELYTRA VanillaModelPart The left wing of the elytra model.
+---@field RIGHT_ELYTRA VanillaModelPart The right wing of the elytra model.
+---@field LEFT_ITEM VanillaModelPart The item in the player's left hand.
+---@field RIGHT_ITEM VanillaModelPart The item in the player's right hand.
+---@field LEFT_PARROT VanillaModelPart The Parrot in the player's left shoulder.
+---@field RIGHT_PARROT VanillaModelPart The Parrot in the player's right shoulder.
+---@field ALL VanillaModelGroup Multi-part: The entirety of the vanilla model.
+---@field PLAYER VanillaModelGroup Multi-part: Both the outer and inner layers of the player's skin, as well as the cape.
+---@field OUTER_LAYER VanillaModelGroup Multi-part: The outer layer of the player.
+---@field INNER_LAYER VanillaModelGroup Multi-part: The main body of the player, everything except the outer layer.
+---@field CAPE VanillaModelGroup Multi-part: The player's cape.
+---@field ARMOR VanillaModelGroup Multi-part: All armor on the model.
+---@field HELMET VanillaModelGroup Multi-part: The helmet model.
+---@field CHESTPLATE VanillaModelGroup Multi-part: The chestplate model.
+---@field LEGGINGS VanillaModelGroup Multi-part: The leggings model.
+---@field BOOTS VanillaModelGroup Multi-part: The boots model.
+---@field ELYTRA VanillaModelGroup Multi-part: The elytra model.
+---@field HELD_ITEMS VanillaModelGroup Multi-part: Items in the player's hands.
+---@field PARROTS VanillaModelGroup Multi-part: Parrots on the player's shoulders.
+local VanillaModelAPI={}

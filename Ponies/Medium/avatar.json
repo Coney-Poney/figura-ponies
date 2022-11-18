@@ -1,0 +1,7 @@
+{
+  "name": "Example Pony",
+  "authors": ["winterClover", "GNamimates", "KitCat"],
+  "autoScripts":["pony"],
+  
+  "description":"Pony template, medium"
+}

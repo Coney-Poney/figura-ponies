@@ -1,0 +1,7 @@
+{
+  "name": "Example Griffon",
+  "authors": ["winterClover", "GNamimates", "KitCat"],
+  "autoScripts":["pony"],
+  
+  "description":"Griffon template, large"
+}

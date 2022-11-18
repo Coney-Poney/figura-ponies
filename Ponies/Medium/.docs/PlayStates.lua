@@ -1,0 +1,5 @@
+---List of valid PlayStates. Used within Blockbench animations.
+---@alias PlayStates
+---| 'STOPPED'
+---| 'PAUSED'
+---| 'PLAYING'
