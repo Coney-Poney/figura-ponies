@@ -1,8 +1,0 @@
----List of valid TextureTypes. Used within ModelParts.
----@alias TextureTypes
----| 'SKIN'
----| 'CAPE'
----| 'ELYTRA'
----| 'RESOURCE'
----| 'PRIMARY'
----| 'SECONDARY'
