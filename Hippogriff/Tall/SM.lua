@@ -286,22 +286,23 @@ events.RENDER:register(function(d)
         end
 
         models.pony.Root.body.Tail:setRot(vanilla_model.FAKE_CAPE:getOriginRot()) -- Tail Physics
+        if not Magic then
+            if player:getActiveItem().id == "minecraft:bow" then -- Bow animation
+                if player:isClimbing() then
+                    models.pony.Root.left_front_leg:offsetRot(r.x * 0.9, 0, -r.y)
+                    models.pony.Root.right_front_leg:offsetRot(r.x * 0.9, 0, -r.y)
+                elseif pose == "SWIMMING" then
+                    models.pony.Root.left_front_leg:offsetRot(0, r.y, 0)
+                    models.pony.Root.right_front_leg:offsetRot(0, r.y, 0)
 
-        if player:getActiveItem().id == "minecraft:bow" then -- Bow animation
-            if player:isClimbing() then
-                models.pony.Root.left_front_leg:offsetRot(r.x * 0.9, 0, -r.y)
-                models.pony.Root.right_front_leg:offsetRot(r.x * 0.9, 0, -r.y)
-            elseif pose == "SWIMMING" then
-                models.pony.Root.left_front_leg:offsetRot(0, r.y, 0)
-                models.pony.Root.right_front_leg:offsetRot(0, r.y, 0)
-
+                else
+                    models.pony.Root.left_front_leg:offsetRot(r.x * 0.9, r.y, 0)
+                    models.pony.Root.right_front_leg:offsetRot(r.x * 0.9, r.y, 0)
+                end
             else
-                models.pony.Root.left_front_leg:offsetRot(r.x * 0.9, r.y, 0)
-                models.pony.Root.right_front_leg:offsetRot(r.x * 0.9, r.y, 0)
+                models.pony.Root.left_front_leg:offsetRot(0, 0, 0)
+                models.pony.Root.right_front_leg:offsetRot(0, 0, 0)
             end
-        else
-            models.pony.Root.left_front_leg:offsetRot(0, 0, 0)
-            models.pony.Root.right_front_leg:offsetRot(0, 0, 0)
         end
     end
 end)
@@ -432,4 +433,3 @@ else
         print("Enabled Magic!")
     end)
 end
-
