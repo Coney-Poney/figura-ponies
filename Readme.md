@@ -1,6 +1,11 @@
-# Customizable Pony Avatar (V2.1)
-**Hack'd together by winterClover**
-
+# Customizable Pony Avatar (V1.1)
+## Credits
+ - wtrClover: Model creator
+ - Shebang: Repository management/organization
+ - KitCat962: Custom Events + Armor scripts
+ - GNanimates: Timer State Machines, base avatar
+ 
+ 
 The ponies are here for Figura Rewrite! (Version 0.1.0-rc.11 as of writting this) If you want to be a little pony, now you can!
 
 Thanks to KitCat962 for making Custom Events and Armor scripts
@@ -37,15 +42,10 @@ NOTE: only put things in the the hair folder IF you want it to be hidden when we
 
 (Technicallly you *could* replace entire parts just as long you keep the same bone structures, but I do *not* recommend it unless you know what you are doing.)
 
-### The Rest.
+### The Rest
 
 So you made your pony and satified with how it looks. Now you're almost done!
 
 Obviously, change the name in 'avatar.json' to your pony's name. Then you have to go into 'pony.lua' and there are two varibles on the top you want to change: "Magic" and Wings." Change them accordingly.
 
 Now you have a Custom Pony!
-
-
-
-## KNOWN ISSUES
-- Heck if I really know what's left
