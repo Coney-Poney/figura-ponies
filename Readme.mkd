@@ -1,7 +1,7 @@
 # Customizable Pony Avatar (V2.1)
 **Hack'd together by winterClover**
 
-The ponies are here for Figura Rewrite! (Version 0.1.0-rc.9 as of writting this) If you want to be a little pony, now you can!
+The ponies are here for Figura Rewrite! (Version 0.1.0-rc.11 as of writting this) If you want to be a little pony, now you can!
 
 Thanks to KitCat962 for making Custom Events and Armor scripts
 Thanks to GNamimates for the Timer, State Machines, and the base avatar
