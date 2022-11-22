@@ -433,3 +433,5 @@ else
         print("Enabled Magic!")
     end)
 end
+
+vanilla_model.HELMET_ITEM:setVisible(true)
