@@ -5,6 +5,7 @@ local vehicle = nil
 local rot = vec(0,0,0)
 local lrot = vec(0,0,0)
 local isLegsBusy = false
+local horned = models.pony.Root.body.neck.head.horn:getVisible()
 
 --- Set-Up ---
 SM = {
@@ -19,6 +20,7 @@ Keys = {
 }
 SM.move.blendTime = 0.18
 
+vanilla_model.HELMET_ITEM:setVisible(true)
 --- Keys ---
 Keys.attack.onPress = function()
     if not action_wheel:isEnabled() then
@@ -351,13 +353,17 @@ events.TICK:register(function ()
             magicAura()
             models.pony.Root.right_front_leg.RIGHT_ITEM_PIVOT:setVisible(false)
             models.pony.Root.left_front_leg.LEFT_ITEM_PIVOT:setVisible(false)
-            models.pony.Root.body.neck.head.horn:setVisible(true)
+            if not horned then
+                models.pony.Root.body.neck.head.horn:setVisible(true)
+            end
         else
             models.pony.RightArm:setVisible(false)
             models.pony.LeftArm:setVisible(false)
             models.pony.Root.right_front_leg.RIGHT_ITEM_PIVOT:setVisible(true)
             models.pony.Root.left_front_leg.LEFT_ITEM_PIVOT:setVisible(true)
-            models.pony.Root.body.neck.head.horn:setVisible(false)
+            if not horned then
+                models.pony.Root.body.neck.head.horn:setVisible(false)
+            end
         end
 
         if Wings then
@@ -384,7 +390,6 @@ end)
 rootPage = action_wheel:createPage()
 
 local toggle = rootPage:newAction()
-local elytraTexture = false
 toggle:title("Toggle Wings")
 toggle:item("minecraft:elytra")
 if Wings then
@@ -434,4 +439,3 @@ else
     end)
 end
 
-vanilla_model.HELMET_ITEM:setVisible(true)
