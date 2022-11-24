@@ -1,4 +1,4 @@
-# Customizable Pony Avatar (V1.2)
+# Customizable Pony Avatar (V1.1.1)
 ## Credits
  - wtrClover: Model creator
  - Shebang: Repository management/organization
