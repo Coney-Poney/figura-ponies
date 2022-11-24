@@ -394,22 +394,34 @@ toggle:title("Toggle Wings")
 toggle:item("minecraft:elytra")
 if Wings then
     toggle:onToggle(function()
+        pings.wings(false)
         Wings = false
         print("Disabled Wings!")
     end)
     toggle:onUntoggle(function()
+        pings.wings(true)
         Wings = true
         print("Enabled Wings!")
     end)
 else
     toggle:onUntoggle(function()
+        pings.wings(false)
         Wings = false
         print("Disabled Wings!")
     end)
     toggle:onToggle(function()
+        pings.wings(true)
         Wings = true
         print("Enabled Wings!")
     end)
+end
+
+function pings.wings(bool)
+    if bool then 
+        Wings = true
+    else
+        Wings = false
+    end
 end
 
 local toggle = rootPage:newAction()
@@ -417,25 +429,38 @@ toggle:title("Toggle Horn/Magic")
 toggle:item("minecraft:end_rod")
 if Magic then
     toggle:onToggle(function()
+        pings.magic(false)
         Magic = false
         models.pony.Root.body.neck.head.horn_glow:setVisible(false)
         print("Disabled Magic!")
     end)
     toggle:onUntoggle(function()
+        pings.magic(true)
         Magic = true
         models.pony.Root.body.neck.head.horn_glow:setVisible(true)
         print("Enabled Magic!")
     end)
 else
     toggle:onUntoggle(function() 
+        pings.magic(false)
         Magic = false
         models.pony.Root.body.neck.head.horn_glow:setVisible(false)
         print("Disabled Magic!")
     end)
     toggle:onToggle(function() 
+        pings.magic(true)
         Magic = true
         models.pony.Root.body.neck.head.horn_glow:setVisible(true)
         print("Enabled Magic!")
     end)
 end
 
+function pings.magic(bool)
+    if bool then 
+        Magic = true
+        models.pony.Root.body.neck.head.horn_glow:setVisible(true)
+    else
+        Magic = false
+        models.pony.Root.body.neck.head.horn_glow:setVisible(false)
+    end
+end
