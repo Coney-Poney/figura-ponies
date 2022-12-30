@@ -1,7 +1,7 @@
 {
-  "name": "Example Changeling",
-  "authors": ["winterClover", "GNamimates", "KitCat"],
+  "name": "Tall Changeling",
+  "authors": ["winterClover", "GrandpaScout", "KitCat"],
   "autoScripts":["pony"],
   
-  "description":"Changeling template, tall"
+  "description":"Changeling template, Tall"
 }

@@ -1,7 +1,7 @@
 {
-  "name": "Example Pony",
-  "authors": ["winterClover", "GNamimates", "KitCat"],
+  "name": "Large Pony",
+  "authors": ["winterClover", "GrandpaScout", "KitCat"],
   "autoScripts":["pony"],
   
-  "description":"Pony template, large"
+  "description":"Pony template, Large"
 }
