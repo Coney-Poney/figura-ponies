@@ -28,9 +28,10 @@ And Thanks to 'Fran' for making 'Figura,' the mod that made this possible in the
   - Griffons
   - Hippogriffs
   - Kirins
-- 2 custom emotes in action wheel. (More might be added?)
+- 3 custom emotes in action wheel.
  - 'Siting'
  - 'Yee Haw'
+ - 'Dancing'
 - Togglable Horns and Wings
 
 ## Customizing Your Pony
