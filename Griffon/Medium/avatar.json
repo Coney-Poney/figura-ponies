@@ -1,6 +1,6 @@
 {
-  "name": "Example Griffon",
-  "authors": ["winterClover", "GNamimates", "KitCat"],
+  "name": "Medium Griffon",
+  "authors": ["winterClover", "GrandpaScout", "KitCat"],
   "autoScripts":["pony"],
   
   "description":"Griffon template, medium"

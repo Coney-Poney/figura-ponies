@@ -1,15 +1,19 @@
-# Customizable Pony Avatar (V1.1.1)
+# Customizable Pony Avatar (V2.0.0)
 ## Credits
  - wtrClover: Model creator
  - Shebang: Repository management/organization
- - KitCat962: Custom Events + Armor scripts
- - GNanimates: Timer State Machines, base avatar
+ - KitCat962: Events + Armor API
+ - GrandpaScout: Animation Blend Library
  
  
-The ponies are here for Figura Rewrite! (Version 0.1.0-rc.11 as of writting this) If you want to be a little pony, now you can!
+The ponies are here for Figura Rewrite! (Version 0.1.0-rc.12 as of writting this) If you want to be a little pony, now you can!
 
-Thanks to KitCat962 for making Custom Events and Armor scripts
-Thanks to GNamimates for the Timer, State Machines, and the base avatar
+Thanks to KitCat962 for making the Events and Armor API
+
+Thanks to GrandpaScout for Animation Blend Library
+
+Thanks to GNamimates for the code inspiration
+
 And Thanks to 'Fran' for making 'Figura,' the mod that made this possible in the first place!
 
 - Support and unique textures for all armor types.
@@ -37,8 +41,8 @@ In this zip, there are 3 pony bases you can use to create your own pony along wi
 
 ### EXTRA PARTS
 
-You COULD add extra parts; there's enough space on 'texture.png' to support that. You just need to put into an existing group/bone or else it would just not animate with the rest of the body. You also need to at least know how to use Blockbench at the very least. (the Pinkie Pie avatar included in this is a good example)
-NOTE: only put things in the the hair folder IF you want it to be hidden when wearing a helmet
+You COULD add extra parts; there's enough space on 'texture.png' to support that. You just need to put into an existing group/bone or else it would just not animate with the rest of the body. You also need to at least know how to use Blockbench at the very least.
+NOTE: every mesh within the "Hair" folder will be hidden upon wearing an helmet
 
 (Technicallly you *could* replace entire parts just as long you keep the same bone structures, but I do *not* recommend it unless you know what you are doing.)
 

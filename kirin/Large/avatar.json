@@ -1,7 +1,7 @@
 {
-  "name": "Example Kirin",
-  "authors": ["winterClover", "GNamimates", "KitCat"],
+  "name": "Large Kirin",
+  "authors": ["winterClover", "GrandpaScout", "KitCat"],
   "autoScripts":["pony"],
   
-  "description":"Kirin template, large"
+  "description":"Kirin template, Large"
 }

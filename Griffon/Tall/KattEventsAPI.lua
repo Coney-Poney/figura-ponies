@@ -8,35 +8,78 @@
 --║                                                                          ║--
 --╚══════════════════════════════════════════════════════════════════════════╝--
 
---v1.2
+--v1.4.3
 
----@class Subscription
----@field func function
----@field name string
+---@alias KattEvent.Subscription {func:function,name:string?}
 
 ---@class KattEvent
----@field subscribers Subscription[]
----@field queuedFunctions {func:function,predicate:fun():boolean}[]
-local KattEvent = {
-  subscribers = {},
-  queuedFunctions={}
+---@field subscribers KattEvent.Subscription[]
+---@field addQueue KattEvent.Subscription[]
+---@field removeQueue KattEvent.Subscription[]
+---@field piped boolean
+---@operator len:number
+---@operator call:any?
+local KattEvent = {}
+local KattEventMetatable = {
+  __index = KattEvent,
+  __len = function(e)
+    return #e.subscribers + #e.addQueue
+  end,
+  __call = function(self, ...)
+    self:invoke(...)
+  end,
+  __type = "Event",
 }
 
 ---Creates a new Event.
+---@param piped? boolean
 ---@return KattEvent
-function KattEvent.new()
+function KattEvent.new(piped)
+  ---@type KattEvent
   local event = {
     subscribers = {},
-    queuedFunctions={}
+    addQueue = {},
+    removeQueue = {},
+    piped = type(piped) == "boolean" and piped or false,
   }
-  setmetatable(event, {
-    __index = KattEvent,
-    __len = function(e)
-      return #e.subscribers
-    end
-  })
-  KattEvent:invoke(event)
+  setmetatable(event, KattEventMetatable)
   return event
+end
+
+---Forces all functions in `register` and `remove` queues to join/leave the main queue.
+---Used internally.
+function KattEvent:flush()
+  for _, func in ipairs(self.removeQueue) do
+    for index, sub in ipairs(self.subscribers) do
+      if func == sub then
+        table.remove(self.subscribers, index)
+        break
+      end
+    end
+  end
+  while #self.removeQueue > 0 do
+    table.remove(self.removeQueue)
+  end
+  for _, func in ipairs(self.addQueue) do
+    table.insert(self.subscribers, func)
+  end
+  while #self.addQueue > 0 do
+    table.remove(self.addQueue)
+  end
+end
+
+---Invokes the event, calling all it's functions with the given arguments.
+---If this is a piped KattEvent, returns the cumulative returns of the subscriber calls.
+---@param ... any
+---@return any?
+function KattEvent:invoke(...)
+  self:flush()
+  local args = table.pack(...)
+  local vargs = table.pack(...)
+  for _, subscription in ipairs(self.subscribers) do
+    vargs = table.pack(subscription.func(table.unpack(self.piped and vargs or args, 1, args.n)))
+  end
+  if self.piped then return table.unpack(vargs) end
 end
 
 ---Registers the given function to the given event. When the event is invoked, the function will be run.
@@ -46,19 +89,18 @@ end
 function KattEvent:register(func, name)
   if type(func) ~= "function" then error('argument "func" must be a function.', 2) end
   if name ~= nil and type(name) ~= "string" then error('argument "name" must be a string or nil.', 2) end
-  table.insert(self.subscribers, { func = func, name = name })
+  table.insert(self.addQueue, {func = func, name = name})
 end
 
----Removes the the function with the given index from the Event.
----Default index is 1, removing the oldest function registered.
----A name can instead be provided to remove all the functions with that name.
+---Removes all of the functions with the given name from the Event.
 ---@param name string
 ---@return integer
 function KattEvent:remove(name)
+  if not name then error("KattEvent:remove does not allow nil values, expected string.", 2) end
   local removed = 0
-  for i = 1, #self.subscribers do
-    if self.subscribers[i - removed].name == name then
-      table.remove(self.subscribers, i - removed)
+  for _, sub in ipairs(self.subscribers) do
+    if sub.name == name then
+      table.insert(self.removeQueue, sub)
       removed = removed + 1
     end
   end
@@ -70,29 +112,66 @@ function KattEvent:clear()
   while #self.subscribers > 0 do
     table.remove(self.subscribers)
   end
-end
-
----Invokes the event, calling all it's functions with the given arguments.
----@param ... any
-function KattEvent:invoke(...)
-  for _, subscription in pairs(self.subscribers) do
-    subscription.func(...)
+  while #self.addQueue > 0 do
+    table.remove(self.addQueue)
   end
-  local removed = 0
-  for i=1,#self.queuedFunctions do
-    if self.queuedFunctions[i - removed].predicate() then
-      self.queuedFunctions[i - removed].func()
-      table.remove(self.queuedFunctions,i-removed)
-      removed=removed+1
-    end
+  while #self.removeQueue > 0 do
+    table.remove(self.removeQueue)
   end
 end
 
----Waits until the predicate returns true, then runs the given function. The predicate will only be checked when the event is invoked.
----@param predicate fun():boolean
----@param func function
-function KattEvent:runOnce(predicate,func)
-  table.insert(self.queuedFunctions,{predicate=predicate,func=func})
+---@deprecated
+function KattEvent:runOnce()
+  error("KattEvent:runOnce is deprecated and does not function.", 2)
 end
 
-return KattEvent
+---Adds the necessary metatable functionality for a table to behave like the `events` global.
+---@param tbl table
+---@return table
+local function eventifyTable(tbl)
+  return setmetatable({}, {
+    __index = function(t, i)
+      if type(i) == "string" then
+        local eStr = i:upper()
+        if type(tbl[eStr]) == "Event" then
+          return tbl[eStr]
+        end
+      end
+      return tbl[i]
+    end,
+    __newindex = function(t, i, v)
+      if type(i) == "string" then
+        local eStr = i:upper()
+        if type(v) == "Event" then
+          tbl[eStr] = v
+          return
+        elseif type(tbl[eStr]) == "Event" then
+          if type(v) ~= "function" then error(("Cannot register non-functions to Event %s."):format(eStr)
+            , 2) end
+          tbl[eStr]:register(v)
+          return
+        end
+      end
+      tbl[i] = v
+    end,
+    __pairs = function(t)
+      return pairs(tbl)
+    end,
+    __ipairs = function(t)
+      return ipairs(tbl)
+    end,
+  })
+end
+
+---@class KattEvent.API
+local KattEventsAPI = {
+  newEvent = KattEvent.new,
+  eventifyTable = eventifyTable,
+  ---@deprecated
+  ---The returned table is no longer a KattEvent. use the `newEvent` function indexed through this table.
+  new = function()
+    error("This is no longer a KattEvent. You can get an event through the `newEvent` function indexed through this table."
+      , 2)
+  end,
+}
+return KattEventsAPI
