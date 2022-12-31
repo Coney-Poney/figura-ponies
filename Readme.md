@@ -9,8 +9,11 @@
 The ponies are here for Figura Rewrite! (Version 0.1.0-rc.12 as of writting this) If you want to be a little pony, now you can!
 
 Thanks to KitCat962 for making the Events and Armor API
+
 Thanks to GrandpaScout for Animation Blend Library
+
 Thanks to GNamimates for the code inspiration
+
 And Thanks to 'Fran' for making 'Figura,' the mod that made this possible in the first place!
 
 - Support and unique textures for all armor types.
