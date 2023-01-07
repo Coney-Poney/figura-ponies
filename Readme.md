@@ -6,7 +6,7 @@
  - GrandpaScout: Animation Blend Library
  
  
-The ponies are here for Figura Rewrite! (Version 0.1.0-rc.12 as of writting this) If you want to be a little pony, now you can!
+The ponies are here for Figura Rewrite! (Version 0.1.0-rc.13 as of writting this) If you want to be a little pony, now you can!
 
 Thanks to KitCat962 for making the Events and Armor API
 
