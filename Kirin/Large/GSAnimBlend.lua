@@ -6,7 +6,7 @@
 -- │ └─┐ └─────┘└─────┘ ┌─┘ │ --
 -- └───┘                └───┘ --
 ---@module  "Animation Blend Library" <GSAnimBlend>
----@version v1.3.0
+---@version v1.4.0
 ---@see     GrandpaScout @ https://github.com/GrandpaScout
 -- Adds prewrite-like animation blending to the rewrite.
 -- Also includes the ability to modify how the blending works per-animation with blending callbacks.
@@ -19,111 +19,14 @@
 -- descriptions of each function, method, and field in this library.
 
 local ID = "GSAnimBlend"
-local VER = "1.3.0"
-
------===================================== DOCUMENTATION ======================================-----
-
----@class Lib.GS.AnimBlend.AnimData
----The blending time of this animation in ticks.
----@field blendTime number
----The faked blend weight value of this animation.
----@field blend number
----The preferred blend weight that blending will use.
----@field blendSane number
----Where in the timeline the stop instruction is placed.  
----If this is `false`, there is no stop instruction due to length limits.
----@field length number|false
----The id for this animation's blend trigger
----@field triggerId string
----The callback function this animation will call every frame while it is blending and one final
----time when blending finishes.
----@field callback? Lib.GS.AnimBlend.blendCallback
-
----@class Lib.GS.AnimBlend.BlendState
----The amount of time this blend has been running for in ticks.
----@field time number
----The maximum time this blend will run in ticks.
----@field max number|false
----The starting blend weight.
----@field from number|false
----The ending blend weight.
----@field to number|false
----The callback to call each blending frame.
----@field callback? function
----The state proxy used in the blend callback function.
----@field callbackState Lib.GS.AnimBlend.CallbackState
----Determines if this blend is starting or ending an animation.
----@field starting boolean
-
----@class Lib.GS.AnimBlend.CallbackState
----The animation this callback is acting on.
----@field anim Animation
----The amount of time this blend has been running for in ticks.
----@field time number
----The maximum time this blend will run in ticks.
----@field max number
----The progress as a percentage.
----@field progress number
----The starting blend weight.
----@field from number
----The ending blend weight.
----@field to number
----Determines if this blend is starting or ending an animation.
----@field starting boolean
----Determines if this blend is finishing up.
----@field done boolean
-
----@alias Lib.GS.AnimBlend.blendCallback
----| fun(state: Lib.GS.AnimBlend.CallbackState, data: Lib.GS.AnimBlend.AnimData)
-
-if false --[[Documentation Only]] then
-  ---@class Animation
-  ---#### [GS AnimBlend Library]
-  ---The callback that should be called every frame while the animation is blending.
-  ---
-  ---This allows adding custom behavior to the blending feature.
-  ---
-  ---If this is `nil`, it will default to the library's basic callback.
-  ---@field blendCallback? Lib.GS.AnimBlend.blendCallback
-  local Animation
+local VER = "1.4.0"
 
 
-  ---===== GETTERS =====---
+--|==================================================================================================================|--
+--|=====|| SCRIPT ||=================================================================================================|--
+--||=:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:=:==:=:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:=||--
 
-  ---#### [GS AnimBlend Library]
-  ---Gets the blending time of this animation in ticks.
-  ---@return integer
-  function Animation:getBlendTime() end
-
-  ---#### [GS AnimBlend Library]
-  ---Gets if this animation is currently blending.
-  ---@return boolean
-  function Animation:isBlending() end
-
-
-  ---===== SETTERS =====---
-
-  ---#### [GS AnimBlend Library]
-  ---Sets the blending time of this animation in ticks.
-  ---@generic self
-  ---@param self self
-  ---@param time integer
-  ---@return self
-  function Animation:blendTime(time) end
-
-  ---#### [GS AnimBlend Library]
-  ---Sets the blending callback of this animation.
-  ---@generic self
-  ---@param self self
-  ---@param func? Lib.GS.AnimBlend.blendCallback
-  ---@return self
-  function Animation:onBlend(func) end
-end
-
-
------====================================== SCRIPT START ======================================-----
-
-----@diagnostic disable: undefined-global, undefined-field
+---@diagnostic disable: duplicate-set-field, duplicate-doc-field
 
 ---This library is used to allow prewrite-like animation blending with one new feature with infinite
 ---possibility added on top.  
@@ -158,7 +61,7 @@ local thismt = {
   __metatable = false,
   __index = {
     _ID = ID,
-    _VERSION = VER,
+    _VERSION = VER
   }
 }
 
@@ -230,6 +133,44 @@ local function makeSane(val, def)
 end
 
 
+-----============================ PREPARE METATABLE MODIFICATIONS =============================-----
+
+local mt = figuraMetatables.Animation
+
+---@type Animation
+local ext_Animation = setmetatable({}, mt)
+
+local _animationIndex = mt.__index
+local _animationNewIndex = mt.__newindex
+
+local animPlay = ext_Animation.play
+local animStop = ext_Animation.stop
+local animBlend = ext_Animation.blend
+local animLength = ext_Animation.length
+local animGetPlayState = ext_Animation.getPlayState
+---@diagnostic disable-next-line: undefined-field
+local animNewCode = ext_Animation.newCode or ext_Animation.addCode
+
+---Contains the old functions, just in case you need direct access to them again.
+---
+---These are useful for creating your own blending callbacks.
+this.oldF = {
+  play = animPlay,
+  stop = animStop,
+
+  getBlend = ext_Animation.getBlend,
+  getPlayState = animGetPlayState,
+
+  setBlend = ext_Animation.setBlend,
+  setLength = ext_Animation.setLength,
+  setPlaying = ext_Animation.setPlaying,
+
+  blend = animBlend,
+  length = animLength,
+  playing = ext_Animation.playing
+}
+
+
 -----=================================== PREPARE ANIMATIONS ===================================-----
 
 -- This will at least catch players running at around 30 fps.
@@ -245,61 +186,39 @@ _GMT.GSLib_triggerBlend = setmetatable({}, {
 })
 
 local animNum = 0
-for _, m in pairs(animations) do
-  for _, a in pairs(m) do
-    local blend = a:getBlend()
-    local len = a:getLength()
-    local lenSane = makeSane(len, false)
-    lenSane = lenSane and (lenSane > tPass and lenSane) or false
-    local tID = "blendAnim_" .. animNum
+local function trackAnimation(anim)
+  local blend = anim:getBlend()
+  local len = anim:getLength()
+  local lenSane = makeSane(len, false)
+  lenSane = lenSane and (lenSane > tPass and lenSane) or false
+  local tID = "blendAnim_" .. animNum
 
-    animData[a] = {
-      blendTime = 0,
-      blend = blend,
-      blendSane = makeSane(blend, 0),
-      length = lenSane,
-      triggerId = tID,
-      callback = nil
-    }
+  animData[anim] = {
+    blendTime = 0,
+    blend = blend,
+    blendSane = makeSane(blend, 0),
+    length = lenSane,
+    triggerId = tID,
+    callback = nil
+  }
 
-    _GMT.GSLib_triggerBlend[tID] = function() if a:getLoop() == "ONCE" then a:stop() end end
+  _GMT.GSLib_triggerBlend[tID] = function() if anim:getLoop() == "ONCE" then anim:stop() end end
 
-    if lenSane then
-      a:newCode(math.max(lenSane - tPass, 0), blendCommand:format(tID))
-    end
-
-    animNum = animNum + 1
+  if lenSane then
+    animNewCode(anim, math.max(lenSane - tPass, 0), blendCommand:format(tID))
   end
+
+  animNum = animNum + 1
 end
 
-
------============================ PREPARE METATABLE MODIFICATIONS =============================-----
-
-local mt = figuraMetatables.Animation
-
----@type Animation
-local Animation = setmetatable({}, mt)
-
-local _animationIndex = mt.__index
-local _animationNewIndex = mt.__newindex
-
-local animPlay = Animation.play
-local animStop = Animation.stop
-local animBlend = Animation.blend
-local animLength = Animation.length
-local animGetPlayState = Animation.getPlayState
-
----Contains the old functions, just in case you need direct access to them again.
----
----These are useful for creating your own blending callbacks.
-this.oldF = {
-  play = animPlay,
-  stop = animStop,
-  getBlend = Animation.getBlend,
-  blend = animBlend,
-  length = animLength,
-  getPlayState = animGetPlayState
-}
+---@compat <=rc.12
+if type(animations) == "table" then
+  for _, model in pairs(animations) do
+    for _, anim in pairs(model) do trackAnimation(anim) end
+  end
+else -- rc13
+  for _, anim in ipairs(animations:getAnimations()) do trackAnimation(anim) end
+end
 
 
 -----===================================== SET UP LIBRARY =====================================-----
@@ -321,7 +240,7 @@ function this.blend(anim, time, from, to)
     assert(chk.badarg(2, "blend", time, "number", true))
     assert(chk.badarg(3, "blend", from, "number", true))
     assert(chk.badarg(4, "blend", to, "number", true))
-    if not from and not to then error("one of arguments #3 or #4 must be a number") end
+    if not from and not to then error("one of arguments #3 or #4 must be a number", 2) end
   end
 
   local starting
@@ -400,7 +319,7 @@ function callbackGenerators.blendVanilla(parts)
   -- Because some dumbass won't read the instructions...
   ---@diagnostic disable-next-line: undefined-field
   if parts.done then
-    error("attempt to use generator 'blendVanilla' as a blend callback.")
+    error("attempt to use generator 'blendVanilla' as a blend callback.", 2)
   end
 
   ---@type {[string]: ModelPart[]}
@@ -428,9 +347,10 @@ function callbackGenerators.blendVanilla(parts)
       local pct = state.starting and 1 - state.progress or state.progress
 
       for n, v in pairs(partList) do
+        ---@type Vector3
         local rot = vanilla_model[n]:getOriginRot()
         if n == "HEAD" then rot[2] = ((rot[2] + 180) % 360) - 180 end
-        rot:mul(pct, pct, pct)
+        rot:scale(pct)
         for _, p in ipairs(v) do p:offsetRot(rot) end
       end
 
@@ -446,7 +366,7 @@ function callbackGenerators.blendTo(anim)
   -- Because some dumbass won't read the instructions...
   ---@diagnostic disable-next-line: undefined-field
   if anim.done then
-    error("attempt to use generator 'blendTo' as a blend callback.")
+    error("attempt to use generator 'blendTo' as a blend callback.", 2)
   end
 
   ---This is used to track when the next animation should start blending.
@@ -507,7 +427,7 @@ local allowed_contexts = {
 }
 
 events.RENDER:register(function(delta, ctx)
-  if not allowed_contexts[ctx] then return end
+  if ctx and not allowed_contexts[ctx] then return end
   for a, s in pairs(blendData) do
     if not markToDelete[a] then
       --Every frame, update time and progress, then call the callback.
@@ -560,8 +480,7 @@ function animationMethods:play()
   if this.safe then assert(chk.badarg(1, "play", self, "Animation")) end
 
   if animData[self].blendTime == 0 or animGetPlayState(self) ~= "STOPPED" then
-    animPlay(self)
-    return
+    return animPlay(self)
   end
 
   if self:isBlending() and blendData[self].starting then return end
@@ -573,8 +492,7 @@ function animationMethods:stop()
   if this.safe then assert(chk.badarg(1, "stop", self, "Animation")) end
 
   if animData[self].blendTime == 0 or animGetPlayState(self) == "STOPPED" then
-    animStop(self)
-    return
+    return animStop(self)
   end
 
   if self:isBlending() and not blendData[self].starting then return end
@@ -607,6 +525,15 @@ end
 
 
 ---===== SETTERS =====---
+
+function animationMethods:setBlendTime(time) self:blendTime(time) end
+function animationMethods:setOnBlend(func) self:onBlend(func) end
+function animationMethods:setBlend(weight) self:blend(weight) end
+function animationMethods:setLength(len) self:length(len) end
+function animationMethods:setPlaying(state) self:playing(state) end
+
+
+---===== CHAINED =====---
 
 function animationMethods:blendTime(time)
   if time == nil then time = 0 end
@@ -650,20 +577,21 @@ function animationMethods:length(len)
   end
 
   local data = animData[self]
-  if data.length then self:newCode(data.length, "") end
+  if data.length then animNewCode(self, data.length, "") end
 
   local lenSane = makeSane(math.max(len - tPass, 0), false)
   data.length = lenSane and (lenSane > tPass and lenSane) or false
 
   if data.length then
-    self:newCode(math.max(data.length - tPass, 0), blendCommand:format(data.triggerId))
+    animNewCode(self, math.max(data.length - tPass, 0), blendCommand:format(data.triggerId))
   end
   return animLength(self, len)
 end
 
-function animationMethods:setPlaying(state)
+function animationMethods:playing(state)
   if this.safe then assert(chk.badarg(1, "setPlaying", self, "Animation")) end
   if state then self:play() else self:stop() end
+  return self
 end
 
 
@@ -686,4 +614,126 @@ function mt:__newindex(key, value)
   end
 end
 
-return setmetatable(this, thismt)
+
+do return setmetatable(this, thismt) end
+
+
+--|==================================================================================================================|--
+--|=====|| DOCUMENTATION ||==========================================================================================|--
+--||=:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:=:==:=:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:=||--
+
+---@diagnostic disable: duplicate-set-field, duplicate-doc-field, duplicate-doc-alias
+---@diagnostic disable: missing-return, unused-local, lowercase-global
+
+---@class Lib.GS.AnimBlend.AnimData
+---The blending time of this animation in ticks.
+---@field blendTime number
+---The faked blend weight value of this animation.
+---@field blend number
+---The preferred blend weight that blending will use.
+---@field blendSane number
+---Where in the timeline the stop instruction is placed.  
+---If this is `false`, there is no stop instruction due to length limits.
+---@field length number|false
+---The id for this animation's blend trigger
+---@field triggerId string
+---The callback function this animation will call every frame while it is blending and one final
+---time when blending finishes.
+---@field callback? Lib.GS.AnimBlend.blendCallback
+
+---@class Lib.GS.AnimBlend.BlendState
+---The amount of time this blend has been running for in ticks.
+---@field time number
+---The maximum time this blend will run in ticks.
+---@field max number|false
+---The starting blend weight.
+---@field from number|false
+---The ending blend weight.
+---@field to number|false
+---The callback to call each blending frame.
+---@field callback? function
+---The state proxy used in the blend callback function.
+---@field callbackState Lib.GS.AnimBlend.CallbackState
+---Determines if this blend is starting or ending an animation.
+---@field starting boolean
+
+---@class Lib.GS.AnimBlend.CallbackState
+---The animation this callback is acting on.
+---@field anim Animation
+---The amount of time this blend has been running for in ticks.
+---@field time number
+---The maximum time this blend will run in ticks.
+---@field max number
+---The progress as a percentage.
+---@field progress number
+---The starting blend weight.
+---@field from number
+---The ending blend weight.
+---@field to number
+---Determines if this blend is starting or ending an animation.
+---@field starting boolean
+---Determines if this blend is finishing up.
+---@field done boolean
+
+---@alias Lib.GS.AnimBlend.blendCallback
+---| fun(state: Lib.GS.AnimBlend.CallbackState, data: Lib.GS.AnimBlend.AnimData)
+
+
+
+
+
+---@class Animation
+---#### [GS AnimBlend Library]
+---The callback that should be called every frame while the animation is blending.
+---
+---This allows adding custom behavior to the blending feature.
+---
+---If this is `nil`, it will default to the library's basic callback.
+---@field blendCallback? Lib.GS.AnimBlend.blendCallback
+local Animation
+
+
+---===== GETTERS =====---
+
+---#### [GS AnimBlend Library]
+---Gets the blending time of this animation in ticks.
+---@return integer
+function Animation:getBlendTime() end
+
+---#### [GS AnimBlend Library]
+---Gets if this animation is currently blending.
+---@return boolean
+function Animation:isBlending() end
+
+
+---===== SETTERS =====---
+
+---#### [GS AnimBlend Library]
+---Sets the blending time of this animation in ticks.
+---@param time integer
+function Animation:setBlendTime(time) end
+
+---#### [GS AnimBlend Library]
+---Sets the blending callback of this animation.
+---@param func? Lib.GS.AnimBlend.blendCallback
+function Animation:setOnBlend(func) end
+
+
+---===== CHAINED =====---
+
+---#### [GS AnimBlend Library]
+---Sets the blending time of this animation in ticks.
+---@generic self
+---@param self self
+---@param time integer
+---@return self
+function Animation:blendTime(time) end
+
+---#### [GS AnimBlend Library]
+---Sets the blending callback of this animation.
+---@generic self
+---@param self self
+---@param func? Lib.GS.AnimBlend.blendCallback
+---@return self
+function Animation:onBlend(func) end
+

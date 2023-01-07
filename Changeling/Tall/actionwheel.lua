@@ -1,101 +1,52 @@
 --TOGGLES--
 local toggle = action_wheel:newPage()
 
-local t = toggle:newAction()
-t:title("Toggle Wings")
-t:item("minecraft:elytra")
-if Wings then
-    t:onToggle(function()
-        pings.disableWings()
-    end)
-    t:onUntoggle(function()
-        pings.enableWings()
-    end)
-else
-    t:onUntoggle(function()
-        pings.disableWings()
-    end)
-    t:onToggle(function()
-        pings.enableWings()
-    end)
-end
-function pings.disableWings()
-    Wings = false
-    print("Disabled Wings!")
-end
-function pings.enableWings()
-    Wings = true
-    print("Enabled Wings!")
+toggle:newAction()
+:title("Toggle Wings")
+:item("minecraft:elytra")
+:onToggle(function () pings.Wings() end)
+function pings.Wings()
+    if Wings then
+        Wings = false
+    else
+        Wings = true
+    end
 end
 
-local t = toggle:newAction()
-t:title("Toggle Horn")
-t:item("minecraft:end_rod")
-if Magic then
-    t:onToggle(function()
-        pings.disableHorn()
-    end)
-    t:onUntoggle(function()
-        pings.enableHorn()
-    end)
-else
-    t:onUntoggle(function() 
-        pings.disableHorn()
-    end)
-    t:onToggle(function() 
-        pings.enableHorn()
-    end)
-end
-function pings.disableHorn()
-    Magic = false
-    models.pony.Root.body.neck.head.horn:setVisible(false)
-    print("Disabled Horn!")
-end
-function pings.enableHorn()
-    Magic = true
-    models.pony.Root.body.neck.head.horn:setVisible(true)
-    print("Enabled Horn!")
+toggle:newAction()
+:title("Toggle Horn")
+:item("minecraft:end_rod")
+:onToggle(function () pings.Horn() end)
+function pings.Horn()
+    if models.pony.Root.body.neck.head.horn:getVisible() then
+        models.pony.Root.body.neck.head.horn:setVisible(false)
+    else
+        models.pony.Root.body.neck.head.horn:setVisible(true)
+    end
 end
 
-local t = toggle:newAction()
-t:title("Toggle Magic")
-t:item("minecraft:nether_star")
-if Magic then
-    t:onToggle(function()
-        pings.disableMagic()
-    end)
-    t:onUntoggle(function()
-        pings.enableMagic()
-    end)
-else
-    t:onUntoggle(function() 
-        pings.disableMagic()
-    end)
-    t:onToggle(function() 
-        pings.enableMagic()
-    end)
-end
-function pings.enableMagic()
-    Magic = true
-    models.pony.Root.body.neck.head.horn_glow:setVisible(true)
-    print("Enabled Magic!")
-end
-function pings.disableMagic()
-    Magic = false
-    models.pony.Root.body.neck.head.horn_glow:setVisible(false)
-    print("Disabled Magic!")
+toggle:newAction()
+:title("Toggle Magic")
+:item("minecraft:nether_star")
+:onToggle(function () pings.Magic() end)
+function pings.Magic()
+    if Magic then
+        Magic = false
+        models.pony.Root.body.neck.head.horn_glow:setVisible(false)
+    else
+        Magic = true
+    end
 end
 
 --EMOTES--
 local emotes = action_wheel:newPage()
 
-local t = emotes:newAction()
-t:title("Yee-Haw")
-t:item("minecraft:lead")
-t:onLeftClick(function ()
+emotes:newAction()
+:title("Yee-Haw")
+:item("minecraft:lead")
+:onLeftClick(function ()
     pings.Yee_Haw()
 end)
-
 function pings.Yee_Haw()
     if emote == 1 then
         emote = 0
@@ -104,13 +55,12 @@ function pings.Yee_Haw()
     end
 end
 
-local t = emotes:newAction()
-t:title("Sit")
-t:item("minecraft:oak_stairs")
-t:onLeftClick(function ()
+emotes:newAction()
+:title("Sit")
+:item("minecraft:oak_stairs")
+:onLeftClick(function ()
     pings.sit()
 end)
-
 function pings.sit()
     if emote == 2 then
         emote = 0
@@ -119,13 +69,12 @@ function pings.sit()
     end
 end
 
-local t = emotes:newAction()
-t:title("Dance")
-t:item("minecraft:music_disc_blocks ")
-t:onLeftClick(function ()
+emotes:newAction()
+:title("Dance")
+:item("minecraft:music_disc_blocks ")
+:onLeftClick(function ()
     pings.dance()
 end)
-
 function pings.dance()
     if emote == 3 then
         emote = 0
@@ -137,17 +86,17 @@ end
 --ROOT--
 local rootPage = action_wheel:newPage()
 
-local t = rootPage:newAction()
-t:title("Toggles")
-t:item("minecraft:stone_button")
-t:onLeftClick(function ()
+rootPage:newAction()
+:title("Toggles")
+:item("minecraft:stone_button")
+:onLeftClick(function ()
     action_wheel:setPage(toggle)
 end)
 
-local t = rootPage:newAction()
-t:title("Emotes")
-t:item("minecraft:jukebox")
-t:onLeftClick(function ()
+rootPage:newAction()
+:title("Emotes")
+:item("minecraft:jukebox")
+:onLeftClick(function ()
     action_wheel:setPage(emotes)
 end)
 

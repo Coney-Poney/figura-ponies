@@ -3,8 +3,8 @@ vanilla_model.HELD_ITEMS:setVisible(true)
 vanilla_model.HELMET_ITEM:setVisible(true)
 
 -- pony stuff
-Magic = false
-Wings = true
+Magic = true
+Wings = false
 
 -- ArmorAPI
 local ArmorAPI = require("KattArmorAPI")

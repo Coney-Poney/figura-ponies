@@ -8,7 +8,7 @@
 --║                                                                          ║--
 --╚══════════════════════════════════════════════════════════════════════════╝--
 
---v2.0.0
+--v2.1.1
 
 ---@alias KattArmor.ArmorPartID KattItemChange.ArmorSlotID
 
@@ -22,12 +22,7 @@
 ---| "turtle"
 ---| string
 
----@class KattArmor.ArmorChangeEvent:KattEvent
----@field register fun(self:KattArmor.ArmorChangeEvent,func:KattArmor.ArmorChangeSubscription,name?:string)
----@alias KattArmor.ArmorChangeSubscription fun(arg:KattArmor.MutableEventArgs,armorID:KattArmor.ArmorPartID,material:KattArmor.ArmorMaterialID?,item:ItemStack,prevMaterial:KattArmor.ArmorMaterialID?,prevItem:ItemStack)
----@alias KattArmor.MutableEventArgs {visible:boolean,glint:boolean,color:Vector3,texture:string|Texture}
-
-local ItemChange = require(((...):match("^(.*%.).+$") or "") .. "KattItemChangeEvent") --[[@as KattItemChange.API]]
+local ItemChange = require((...):gsub("(.)$", "%1.") .. "KattItemChangeEvent") --[[@as KattItemChange.API]]
 
 ---@type table<KattArmor.ArmorPartID,ModelPart[]>
 local armorParts = {
@@ -54,10 +49,26 @@ local function addArmorPart(armorID, ...)
     table.insert(armorParts[armorID], modelPart)
   end
 end
-
 ---@class KattArmor.API
 local KattArmorAPI = {}
-KattArmorAPI.onChange = require(((...):match("^(.*%.).+$") or "") .. "KattEventsAPI").newEvent() --[[@as KattArmor.ArmorChangeEvent]]
+
+---@alias KattArmor.Events.EventArgs {visible:boolean,glint:boolean,color:Vector3,texture:string|Texture}
+local EventAPI = require((...):gsub("(.)$", "%1.") .. "KattEventsAPI")
+
+---@class KattArmor.Events.Change:KattEvent
+---@field register fun(self:KattArmor.Events.Change,func:KattArmor.Events.Subscriptions.Change,name?:string)
+---@alias KattArmor.Events.Subscriptions.Change fun(arg:KattArmor.Events.EventArgs,armorID:KattArmor.ArmorPartID,material:KattArmor.ArmorMaterialID?,item:ItemStack,prevMaterial:KattArmor.ArmorMaterialID?,prevItem:ItemStack)
+---A KattEvent that gets invoked when the armor changes, but before anything happens.
+---You can change how the armor should be rendered using this event.
+KattArmorAPI.onChange = EventAPI.newEvent() --[[@as KattArmor.Events.Change]]
+
+---@class KattArmor.Events.Render:KattEvent
+---@field register fun(self:KattArmor.Events.Render,func:KattArmor.Events.Subscriptions.Render,name?:string)
+---@alias KattArmor.Events.Subscriptions.Render fun(arg:KattArmor.Events.EventArgs,armorID:KattArmor.ArmorPartID,material:KattArmor.ArmorMaterialID?,item:ItemStack,prevMaterial:KattArmor.ArmorMaterialID?,prevItem:ItemStack)
+---A KattEvent that gets invoked when the armor changes, after all changes have been solidified.
+---The values here cannot be changed, so subscriptions can get valid values from this event.
+KattArmorAPI.onRender = EventAPI.newEvent() --[[@as KattArmor.Events.Render]]
+
 ---@param armorID KattArmor.ArmorPartID
 ---@param ... ModelPart
 function KattArmorAPI.addArmor(armorID, ...) addArmorPart(armorID, ...) end
@@ -94,16 +105,16 @@ ItemChange.onItemChange:register(function(itemSlot, item, prevItem)
   if armorMaterial == "golden" then pathMaterial = "gold" end
   local layer = itemSlot == 4 and "2" or "1"
   local path = pathMaterial and ("minecraft:textures/models/armor/%s_layer_%s.png"):format(pathMaterial, layer)
-  ---@type KattArmor.MutableEventArgs
+  ---@type KattArmor.Events.EventArgs
   local eventArg = {
     visible = visible,
     glint = glint,
     color = color,
     texture = path,
   }
-  
+
   KattArmorAPI.onChange(eventArg, armorID, armorMaterial, item, armorProperties[armorID].prevMaterial, prevItem)
-  
+
   local eV, eC, eG, eT, eTT = eventArg.visible and nil, eventArg.color, eventArg.glint and "GLINT" or nil, eventArg.texture, nil
   do local _type = type(eT)
     eTT = _type == "Texture" and "CUSTOM"
@@ -116,6 +127,9 @@ ItemChange.onItemChange:register(function(itemSlot, item, prevItem)
     modelPart:setPrimaryTexture(eTT, eT)
     modelPart:setSecondaryRenderType(eG)
   end
+
+  KattArmorAPI.onRender(eventArg, armorID, armorMaterial, item, armorProperties[armorID].prevMaterial, prevItem)
+
   armorProperties[armorID].prevMaterial = armorMaterial
 end)
 

@@ -8,9 +8,8 @@
 --║                                                                          ║--
 --╚══════════════════════════════════════════════════════════════════════════╝--
 
---v1.1.1
-
-local EventAPI = require(((...):match("^(.*%.).+$") or "") .. "KattEventsAPI", function()
+--v1.1.2
+local EventAPI = require((...):gsub("(.)$", "%1.") .. "KattEventsAPI", function()
   error("KattEventsAPI.lua is needed for this script to work!", 2)
 end) --[[@as KattEvent.API]]
 
