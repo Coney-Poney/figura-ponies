@@ -10,7 +10,7 @@
 
 --v1.0
 
-local ItemChangeAPI = require(((...):match("^(.*%.).+$") or "") .. "KattItemChangeEvent") --[[@as KattItemChange.API]]
+local ItemChangeAPI = require((...):gsub("(.)$", "%1.") .. "KattItemChangeEvent") --[[@as KattItemChange.API]]
 
 ---@type table<KattArmor.ArmorPartID, table<KattArmor.ArmorMaterialID, ModelPart[]?>>
 local parts = {
@@ -39,7 +39,7 @@ function API.addModelPartToMaterial(armorID, materialID, ...)
   ItemChangeAPI.forceUpdate(ItemChangeAPI.ItemSlots[armorID])
 end
 
-require(((...):match("^(.*%.).+$") or "") .. "KattArmorAPI").onChange:register(function(arg, armorID, material, _, prevMaterial, _)
+require((...):gsub("(.)$", "%1.") .. "KattArmorAPI").onChange:register(function(arg, armorID, material, _, prevMaterial, _)
   if parts[armorID][prevMaterial or false] then
     for _, modelPart in ipairs(parts[armorID][prevMaterial or false]) do
       modelPart:setVisible(false)
@@ -48,7 +48,7 @@ require(((...):match("^(.*%.).+$") or "") .. "KattArmorAPI").onChange:register(f
   if parts[armorID][material or false] then
     local visible = arg.visible and nil
     for _, modelPart in ipairs(parts[armorID][material or false]) do
-      modelPart:setVisible(visible)
+      modelPart:setVisible(not visible)
     end
   end
 end)
