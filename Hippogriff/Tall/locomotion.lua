@@ -7,7 +7,7 @@ local landVel = 0
 local wingTexture = false
 
 -- Animations
-events.TICK:register(function() 
+events.TICK:register(function()
     lrot = rot
     rot = vanilla_model.HEAD:getOriginRot()
     vel = player:getVelocity()
@@ -85,6 +85,9 @@ events.TICK:register(function()
         else
             models.pony.Root.left_front_leg:offsetRot(0,0,0)
         end
+    else
+        models.pony.Root.left_front_leg:offsetRot(0,0,0)
+        models.pony.Root.right_front_leg:offsetRot(0,0,0)
     end
 
     if not player:isOnGround() then
