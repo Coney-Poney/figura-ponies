@@ -6,7 +6,7 @@
 -- │ └─┐ └─────┘└─────┘ ┌─┘ │ --
 -- └───┘                └───┘ --
 ---@module  "Animation Blend Library" <GSAnimBlend>
----@version v1.4.0
+---@version v1.5.2
 ---@see     GrandpaScout @ https://github.com/GrandpaScout
 -- Adds prewrite-like animation blending to the rewrite.
 -- Also includes the ability to modify how the blending works per-animation with blending callbacks.
@@ -19,12 +19,40 @@
 -- descriptions of each function, method, and field in this library.
 
 local ID = "GSAnimBlend"
-local VER = "1.4.0"
+local VER = "1.5.2"
+local FIG = {"0.1.0-rc.9", "0.1.0-rc.14"}
 
+do local cmp, ver = client.compareVersions, client.getFiguraVersion()
+  assert(
+    not FIG[1] or cmp(ver, FIG[1]) >= 0,
+    ("Your Figura version (%s) is below the minimum of %s"):format(ver, FIG[1])
+  )
+  assert(
+    not FIG[2] or cmp(ver, FIG[2]) <= 0,
+    ("Your Figura version (%s) is above the maximum of %s"):format(ver, FIG[2])
+  )
+end
 
 --|==================================================================================================================|--
 --|=====|| SCRIPT ||=================================================================================================|--
 --||=:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:=:==:=:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:=||--
+
+-- Localize Lua basic
+local getmetatable = getmetatable
+local setmetatable = setmetatable
+local type = type
+local assert = assert
+local error = error
+local ipairs = ipairs
+local pairs = pairs
+local rawset = rawset
+-- Localize Lua math
+local m_abs = math.abs
+local m_map = math.map
+local m_max = math.max
+local m_huge = math.huge
+-- Localize Figura globals
+local animations = animations
 
 ---@diagnostic disable: duplicate-set-field, duplicate-doc-field
 
@@ -78,12 +106,12 @@ local _GMT = getmetatable(_G)
 ---@type {[Animation]: Lib.GS.AnimBlend.AnimData}
 local animData = {}
 
----Contains the active blend states of each animation.
----@type {[Animation]: Lib.GS.AnimBlend.BlendState}
-local blendData = {}
+---Contains the currently blending animations.
+---@type {[Animation]?: true}
+local blending = {}
 
 this.animData = animData
-this.blendData = blendData
+this.blending = blending
 
 
 -----=================================== UTILITY FUNCTIONS ====================================-----
@@ -102,11 +130,10 @@ chk.types = {
 function chk.badarg(i, name, got, exp, opt)
   local gotT = type(got)
   local gotType = chk.types[gotT] or "userdata"
-  local expType = chk.types[exp] or "userdata"
+  if opt and gotType == "nil" then return true end
 
-  if opt and gotType == "nil" then
-    return true
-  elseif gotType ~= expType then
+  local expType = chk.types[exp] or "userdata"
+  if gotType ~= expType then
     return false, ("bad argument #%d to '%s' (%s expected, got %s)")
       :format(i, name, expType, gotType)
   elseif expType ~= exp and gotT ~= exp then
@@ -121,7 +148,7 @@ function chk.badnum(i, name, got)
   if type(got) ~= "number" then
     local gotType = chk.types[type(got)] or "userdata"
     return false, ("bad argument #%d to '%s' (number expected, got %s)"):format(i, name, gotType)
-  elseif got ~= got or math.abs(got) == math.huge then
+  elseif got ~= got or m_abs(got) == m_huge then
     return false, ("bad argument #%d to '%s' (value cannot be %s)"):format(i, name, got)
   end
 
@@ -129,46 +156,8 @@ function chk.badnum(i, name, got)
 end
 
 local function makeSane(val, def)
-  return (val == val and math.abs(val) ~= math.huge) and val or def
+  return (val == val and m_abs(val) ~= m_huge) and val or def
 end
-
-
------============================ PREPARE METATABLE MODIFICATIONS =============================-----
-
-local mt = figuraMetatables.Animation
-
----@type Animation
-local ext_Animation = setmetatable({}, mt)
-
-local _animationIndex = mt.__index
-local _animationNewIndex = mt.__newindex
-
-local animPlay = ext_Animation.play
-local animStop = ext_Animation.stop
-local animBlend = ext_Animation.blend
-local animLength = ext_Animation.length
-local animGetPlayState = ext_Animation.getPlayState
----@diagnostic disable-next-line: undefined-field
-local animNewCode = ext_Animation.newCode or ext_Animation.addCode
-
----Contains the old functions, just in case you need direct access to them again.
----
----These are useful for creating your own blending callbacks.
-this.oldF = {
-  play = animPlay,
-  stop = animStop,
-
-  getBlend = ext_Animation.getBlend,
-  getPlayState = animGetPlayState,
-
-  setBlend = ext_Animation.setBlend,
-  setLength = ext_Animation.setLength,
-  setPlaying = ext_Animation.setPlaying,
-
-  blend = animBlend,
-  length = animLength,
-  playing = ext_Animation.playing
-}
 
 
 -----=================================== PREPARE ANIMATIONS ===================================-----
@@ -205,7 +194,11 @@ local function trackAnimation(anim)
   _GMT.GSLib_triggerBlend[tID] = function() if anim:getLoop() == "ONCE" then anim:stop() end end
 
   if lenSane then
-    animNewCode(anim, math.max(lenSane - tPass, 0), blendCommand:format(tID))
+    if anim.newCode then
+      anim:newCode(m_max(lenSane - tPass, 0), blendCommand:format(tID))
+    else
+      anim:addCode(m_max(lenSane - tPass, 0), blendCommand:format(tID))
+    end
   end
 
   animNum = animNum + 1
@@ -221,6 +214,60 @@ else -- rc13
 end
 
 
+-----============================ PREPARE METATABLE MODIFICATIONS =============================-----
+
+local mt = figuraMetatables.Animation
+
+local ext_Animation = next(animData)
+if not ext_Animation then error(
+  "No animations have been found!\n" ..
+  "This library cannot build its functions without an animation to use.\n" ..
+  "Create an animation or don't `require` this library to fix the error."
+) end
+
+
+-- Check for conflicts
+if ext_Animation.blendTime then
+  local path = tostring(ext_Animation.blendTime):match("^function: (.-):%d+%-%d+$")
+  error("Conflicting script [" .. path .. "] found!")
+end
+
+local _animationIndex = mt.__index
+local _animationNewIndex = mt.__newindex or rawset
+
+local animPlay = ext_Animation.play
+local animStop = ext_Animation.stop
+local animBlend = ext_Animation.blend
+local animLength = ext_Animation.length
+local animGetPlayState = ext_Animation.getPlayState
+local animGetBlend = ext_Animation.getBlend
+local animIsPlaying = ext_Animation.isPlaying
+local animIsPaused = ext_Animation.isPaused
+---@diagnostic disable-next-line: undefined-field
+local animNewCode = ext_Animation.newCode or ext_Animation.addCode
+
+---Contains the old functions, just in case you need direct access to them again.
+---
+---These are useful for creating your own blending callbacks.
+this.oldF = {
+  play = animPlay,
+  stop = animStop,
+
+  getBlend = animGetBlend,
+  getPlayState = animGetPlayState,
+  isPlaying = animIsPlaying,
+  isPaused = animIsPaused,
+
+  setBlend = ext_Animation.setBlend,
+  setLength = ext_Animation.setLength,
+  setPlaying = ext_Animation.setPlaying,
+
+  blend = animBlend,
+  length = animLength,
+  playing = ext_Animation.playing
+}
+
+
 -----===================================== SET UP LIBRARY =====================================-----
 
 ---Causes a blending event to happen.
@@ -229,12 +276,15 @@ end
 ---value.
 ---
 ---One of `from` or `to` *must* be set.
+---
+---If `starting` is given, it will be used instead of the guessed value from the data given.
 ---@param anim Animation
 ---@param time? number
 ---@param from? number
 ---@param to? number
+---@param starting? boolean
 ---@return Lib.GS.AnimBlend.BlendState
-function this.blend(anim, time, from, to)
+function this.blend(anim, time, from, to, starting)
   if this.safe then
     assert(chk.badarg(1, "blend", anim, "Animation"))
     assert(chk.badarg(2, "blend", time, "number", true))
@@ -243,14 +293,12 @@ function this.blend(anim, time, from, to)
     if not from and not to then error("one of arguments #3 or #4 must be a number", 2) end
   end
 
-  local starting
-  if from and to then
-    starting = from < to
-  else
-    starting = from == 0 and to ~= 0
-  end
-
   local data = animData[anim]
+
+  if starting == nil then
+    local _from, _to = from or data.blendSane, to or data.blendSane
+    starting = _from < _to
+  end
 
   ---@type Lib.GS.AnimBlend.BlendState
   local blendState = {
@@ -265,22 +313,27 @@ function this.blend(anim, time, from, to)
     starting = starting
   }
 
+  local blendSane = data.blendSane
+
   blendState.callbackState = {
     anim = anim,
     time = 0,
-    max = blendState.max or data.blendTime,
+    max = time or data.blendTime,
     progress = 0,
-    from = blendState.from or data.blendSane,
-    to = blendState.to or data.blendSane,
+    from = from or blendSane,
+    to = to or blendSane,
     starting = starting,
     done = false
   }
 
-  animBlend(anim, from or animData[anim].blendSane)
+  data.state = blendState
+
+  blending[anim] = true
+
+  animBlend(anim, from or blendSane)
   animPlay(anim)
   anim:pause()
 
-  blendData[anim] = blendState
   return blendState
 end
 
@@ -301,7 +354,7 @@ function this.defaultCallback(state, data)
     (state.starting and animPlay or animStop)(state.anim)
     animBlend(state.anim, data.blend)
   else
-    animBlend(state.anim, math.map(state.time, 0, state.max, state.from, state.to))
+    animBlend(state.anim, m_map(state.time, 0, state.max, state.from, state.to))
   end
 end
 
@@ -311,6 +364,8 @@ end
 ---The list of parts given is expected to the the list of parts that have a vanilla parent type in
 ---the chosen animation in no particular order.
 ---
+---This callback *also* expects the animation to override vanilla rotations.
+---
 ---Note: The resulting callback makes *heavy* use of `:offsetRot()` and will conflict with any other
 ---code that also uses that method!
 ---@param parts ModelPart[]
@@ -318,7 +373,7 @@ end
 function callbackGenerators.blendVanilla(parts)
   -- Because some dumbass won't read the instructions...
   ---@diagnostic disable-next-line: undefined-field
-  if parts.done then
+  if parts.done ~= nil then
     error("attempt to use generator 'blendVanilla' as a blend callback.", 2)
   end
 
@@ -354,7 +409,7 @@ function callbackGenerators.blendVanilla(parts)
         for _, p in ipairs(v) do p:offsetRot(rot) end
       end
 
-      animBlend(state.anim, math.map(state.time, 0, state.max, state.from, state.to))
+      animBlend(state.anim, m_map(state.time, 0, state.max, state.from, state.to))
     end
   end
 end
@@ -365,7 +420,7 @@ end
 function callbackGenerators.blendTo(anim)
   -- Because some dumbass won't read the instructions...
   ---@diagnostic disable-next-line: undefined-field
-  if anim.done then
+  if anim.done ~= nil then
     error("attempt to use generator 'blendTo' as a blend callback.", 2)
   end
 
@@ -382,7 +437,7 @@ function callbackGenerators.blendTo(anim)
         ready = false
         anim:play()
       end
-      animBlend(state.anim, math.map(state.time, 0, state.max, state.from, state.to))
+      animBlend(state.anim, m_map(state.time, 0, state.max, state.from, state.to))
     end
   end
 end
@@ -392,64 +447,53 @@ this.callbackGen = callbackGenerators
 
 -----===================================== BLENDING LOGIC =====================================-----
 
-local markToDelete = {}
-events.TICK:register(function()
-  for a, s in pairs(blendData) do
-    if not markToDelete[a] then
-      --Update general state data every tick.
-      local data = animData[a]
-      local cbs = s.callbackState
-      s.time = s.time + 1
-      if not s.max then cbs.max = data.blendTime end
-      if not s.from then
-        cbs.from = data.blendSane
-      elseif not s.to then
-        cbs.to = data.blendSane
-      end
-
-      --When a blend stops, update all info to signal it has stopped.
-      if (s.time >= cbs.max) or (animGetPlayState(a) == "STOPPED") then
-        cbs.time = cbs.max
-        cbs.progress = 1
-        cbs.done = true
-
-        --Mark for deletion.
-        markToDelete[#markToDelete+1] = a
-        markToDelete[a] = true
-      end
-    end
-  end
-end, "GSBlendAnim:Tick_UpdateState")
-
+local ticker = 0
+local last_delta = 0
 local allowed_contexts = {
   RENDER = true,
   FIRST_PERSON = true
 }
 
-events.RENDER:register(function(delta, ctx)
-  if ctx and not allowed_contexts[ctx] then return end
-  for a, s in pairs(blendData) do
-    if not markToDelete[a] then
-      --Every frame, update time and progress, then call the callback.
-      local cbs = s.callbackState
-      cbs.time = s.time + delta
-      cbs.progress = cbs.time / cbs.max
-      s.callback(cbs, animData[a])
-    end
-  end
-end, "GSBlendAnim:Render_Progress")
+events.TICK:register(function()
+  ticker = ticker + 1
+end, "GSAnimBlend:Tick_TimeTicker")
 
-events.POST_RENDER:register(function()
-  if #markToDelete > 0 then
-    for i, a in ipairs(markToDelete) do
-      local s = blendData[a]
-      s.callback(s.callbackState, animData[a])
-      blendData[a] = nil
-      markToDelete[i] = nil
-      markToDelete[a] = nil
+events.RENDER:register(function(delta, ctx)
+  if (ctx and not allowed_contexts[ctx])
+  or (delta == last_delta and ticker == 0)
+  then return end
+  local elapsed_time = ticker + (delta - last_delta)
+  ticker = 0
+  for anim in pairs(blending) do
+    -- Every frame, update time and progress, then call the callback.
+    local data = animData[anim]
+    local state = data.state
+    local cbs = state.callbackState
+    state.time = state.time + elapsed_time
+    if not state.max then cbs.max = data.blendTime end
+    if not state.from then
+      cbs.from = data.blendSane
+    elseif not state.to then
+      cbs.to = data.blendSane
+    end
+
+    -- When a blend stops, update all info to signal it has stopped.
+    if (state.time >= cbs.max) or (animGetPlayState(anim) == "STOPPED") then
+      cbs.time = cbs.max
+      cbs.progress = 1
+      cbs.done = true
+
+      -- Do final callback.
+      state.callback(state.callbackState, animData[anim])
+      blending[anim] = nil
+    else
+      cbs.time = state.time
+      cbs.progress = cbs.time / cbs.max
+      state.callback(cbs, animData[anim])
     end
   end
-end, "GSBlendAnim:PostRender_Cleanup")
+  last_delta = delta
+end, "GSAnimBlend:Render_UpdateBlendStates")
 
 
 -----================================ METATABLE MODIFICATIONS =================================-----
@@ -479,25 +523,45 @@ local animationMethods = {}
 function animationMethods:play()
   if this.safe then assert(chk.badarg(1, "play", self, "Animation")) end
 
-  if animData[self].blendTime == 0 or animGetPlayState(self) ~= "STOPPED" then
+  if blending[self] then
+    local state = animData[self].state
+    if state.starting then return end
+
+    animStop(self)
+    local cbs = state.callbackState
+    local time = cbs.max * cbs.progress
+    this.blend(self, time, animGetBlend(self), nil, true)
+    return
+  elseif animData[self].blendTime == 0 or animGetPlayState(self) ~= "STOPPED" then
     return animPlay(self)
   end
 
-  if self:isBlending() and blendData[self].starting then return end
-
-  this.blend(self, nil, 0, nil)
+  this.blend(self, nil, 0, nil, true)
 end
+
+--[[
+function animationMethods:pause()
+  -- Pausing while blending will work eventually.
+  -- It's just gonna need some code rework to get done.
+end
+]]
 
 function animationMethods:stop()
   if this.safe then assert(chk.badarg(1, "stop", self, "Animation")) end
 
-  if animData[self].blendTime == 0 or animGetPlayState(self) == "STOPPED" then
+  if blending[self] then
+    local state = animData[self].state
+    if not state.starting then return end
+
+    local cbs = state.callbackState
+    local time = cbs.max * cbs.progress
+    this.blend(self, time, animGetBlend(self), 0, false)
+    return
+  elseif animData[self].blendTime == 0 or animGetPlayState(self) == "STOPPED" then
     return animStop(self)
   end
 
-  if self:isBlending() and not blendData[self].starting then return end
-
-  this.blend(self, nil, nil, 0)
+  this.blend(self, nil, nil, 0, false)
 end
 
 
@@ -510,7 +574,7 @@ end
 
 function animationMethods:isBlending()
   if this.safe then assert(chk.badarg(1, "isBlending", self, "Animation")) end
-  return not not blendData[self]
+  return blending[self]
 end
 
 function animationMethods:getBlend()
@@ -520,47 +584,48 @@ end
 
 function animationMethods:getPlayState()
   if this.safe then assert(chk.badarg(1, "getPlayState", self, "Animation")) end
-  return blendData[self] and "PLAYING" or animGetPlayState(self)
+  return blending[self] and "PLAYING" or animGetPlayState(self)
+end
+
+function animationMethods:isPlaying()
+  if this.safe then assert(chk.badarg(1, "isPlaying", self, "Animation")) end
+  return blending[self] or animIsPlaying(self)
+end
+
+function animationMethods:isPaused()
+  if this.safe then assert(chk.badarg(1, "isPaused", self, "Animation")) end
+  return not blending[self] and animIsPaused(self)
 end
 
 
 ---===== SETTERS =====---
 
-function animationMethods:setBlendTime(time) self:blendTime(time) end
-function animationMethods:setOnBlend(func) self:onBlend(func) end
-function animationMethods:setBlend(weight) self:blend(weight) end
-function animationMethods:setLength(len) self:length(len) end
-function animationMethods:setPlaying(state) self:playing(state) end
-
-
----===== CHAINED =====---
-
-function animationMethods:blendTime(time)
+function animationMethods:setBlendTime(time)
   if time == nil then time = 0 end
   if this.safe then
-    assert(chk.badarg(1, "blendTime", self, "Animation"))
-    assert(chk.badnum(2, "blendTime", time))
+    assert(chk.badarg(1, "setBlendTime", self, "Animation"))
+    assert(chk.badnum(2, "setBlendTime", time))
   end
 
-  animData[self].blendTime = math.max(time, 0)
+  animData[self].blendTime = m_max(time, 0)
   return self
 end
 
-function animationMethods:onBlend(func)
+function animationMethods:setOnBlend(func)
   if this.safe then
-    assert(chk.badarg(1, "onBlend", self, "Animation"))
-    assert(chk.badarg(2, "onBlend", func, "function", true))
+    assert(chk.badarg(1, "setOnBlend", self, "Animation"))
+    assert(chk.badarg(2, "setOnBlend", func, "function", true))
   end
 
   animData[self].callback = func
   return self
 end
 
-function animationMethods:blend(weight)
+function animationMethods:setBlend(weight)
   if weight == nil then weight = 0 end
   if this.safe then
-    assert(chk.badarg(1, "blend", self, "Animation"))
-    assert(chk.badarg(2, "blend", weight, "number"))
+    assert(chk.badarg(1, "setBlend", self, "Animation"))
+    assert(chk.badarg(2, "setBlend", weight, "number"))
   end
 
   local data = animData[self]
@@ -569,30 +634,39 @@ function animationMethods:blend(weight)
   return animBlend(self, weight)
 end
 
-function animationMethods:length(len)
+function animationMethods:setLength(len)
   if len == nil then len = 0 end
   if this.safe then
-    assert(chk.badarg(1, "length", self, "Animation"))
-    assert(chk.badarg(2, "length", len, "number"))
+    assert(chk.badarg(1, "setLength", self, "Animation"))
+    assert(chk.badarg(2, "setLength", len, "number"))
   end
 
   local data = animData[self]
   if data.length then animNewCode(self, data.length, "") end
 
-  local lenSane = makeSane(math.max(len - tPass, 0), false)
+  local lenSane = makeSane(m_max(len - tPass, 0), false)
   data.length = lenSane and (lenSane > tPass and lenSane) or false
 
   if data.length then
-    animNewCode(self, math.max(data.length - tPass, 0), blendCommand:format(data.triggerId))
+    animNewCode(self, m_max(data.length - tPass, 0), blendCommand:format(data.triggerId))
   end
   return animLength(self, len)
 end
 
-function animationMethods:playing(state)
+function animationMethods:setPlaying(state)
   if this.safe then assert(chk.badarg(1, "setPlaying", self, "Animation")) end
   if state then self:play() else self:stop() end
   return self
 end
+
+
+---===== CHAINED =====---
+
+animationMethods.blendTime = animationMethods.setBlendTime
+animationMethods.onBlend = animationMethods.setOnBlend
+animationMethods.blend = animationMethods.setBlend
+animationMethods.length = animationMethods.setLength
+animationMethods.playing = animationMethods.setPlaying
 
 
 function mt:__index(key)
@@ -610,7 +684,7 @@ function mt:__newindex(key, value)
     animationSetters[key](self, value)
     return
   else
-    (_animationNewIndex or rawset)(self, key, value)
+    _animationNewIndex(self, key, value)
   end
 end
 
@@ -640,6 +714,8 @@ do return setmetatable(this, thismt) end
 ---The callback function this animation will call every frame while it is blending and one final
 ---time when blending finishes.
 ---@field callback? Lib.GS.AnimBlend.blendCallback
+---The active blend state.
+---@field state? Lib.GS.AnimBlend.BlendState
 
 ---@class Lib.GS.AnimBlend.BlendState
 ---The amount of time this blend has been running for in ticks.
@@ -697,7 +773,7 @@ local Animation
 
 ---#### [GS AnimBlend Library]
 ---Gets the blending time of this animation in ticks.
----@return integer
+---@return number
 function Animation:getBlendTime() end
 
 ---#### [GS AnimBlend Library]
@@ -710,12 +786,18 @@ function Animation:isBlending() end
 
 ---#### [GS AnimBlend Library]
 ---Sets the blending time of this animation in ticks.
----@param time integer
+---@generic self
+---@param self self
+---@param time number
+---@return self
 function Animation:setBlendTime(time) end
 
 ---#### [GS AnimBlend Library]
 ---Sets the blending callback of this animation.
+---@generic self
+---@param self self
 ---@param func? Lib.GS.AnimBlend.blendCallback
+---@return self
 function Animation:setOnBlend(func) end
 
 
@@ -725,7 +807,7 @@ function Animation:setOnBlend(func) end
 ---Sets the blending time of this animation in ticks.
 ---@generic self
 ---@param self self
----@param time integer
+---@param time number
 ---@return self
 function Animation:blendTime(time) end
 
