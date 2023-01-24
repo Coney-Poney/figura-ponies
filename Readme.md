@@ -6,7 +6,7 @@
  - GrandpaScout: Animation Blend Library
  
  
-The ponies are here for Figura Rewrite! (Version 0.1.0-rc.13 as of writting this) If you want to be a little pony, now you can!
+The ponies are here for [Figura Rewrite!](https://modrinth.com/mod/figura) (Version 0.1.0-rc.13 as of writting this) If you want to be a little pony, now you can!
 
 Thanks to KitCat962 for making the Events and Armor API
 
@@ -33,6 +33,8 @@ And Thanks to 'Fran' for making 'Figura,' the mod that made this possible in the
  - 'Yee Haw'
  - 'Dancing'
 - Togglable Horns and Wings
+
+Community models are found here! [Link](https://github.com/Coney-Poney/figura-ponies-community)
 
 ## Customizing Your Pony
 
