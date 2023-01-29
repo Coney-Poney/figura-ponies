@@ -27,13 +27,13 @@ ArmorAPI.addBoots(
     models.pony.Root.right_back_leg.Boots
 )
 
-KCT.assignTextureToMaterial("leather",textures:getTextures()[4])
-KCT.assignTextureToMaterial("chainmail",textures:getTextures()[8])
-KCT.assignTextureToMaterial("iron",textures:getTextures()[7])
-KCT.assignTextureToMaterial("golden",textures:getTextures()[1])
-KCT.assignTextureToMaterial("diamond",textures:getTextures()[2])
-KCT.assignTextureToMaterial("netherite",textures:getTextures()[9])
-KCT.assignTextureToMaterial("turtle",textures:getTextures()[5])
+KCT.assignTextureToMaterial("leather",textures["Textures.leather"] or textures["pony.leather"])
+KCT.assignTextureToMaterial("chainmail",textures["Textures.chainmail"] or textures["pony.chainmail"])
+KCT.assignTextureToMaterial("iron",textures["Textures.iron"] or textures["pony.iron"])
+KCT.assignTextureToMaterial("golden",textures["Textures.gold"] or textures["pony.gold"])
+KCT.assignTextureToMaterial("diamond",textures["Textures.diamond"] or textures["pony.diamond"])
+KCT.assignTextureToMaterial("netherite",textures["Textures.netherite"] or textures["pony.netherite"])
+KCT.assignTextureToMaterial("turtle",textures["Textures.turtle"] or textures["pony.turtle"])
 
 KCM.addModelPartToMaterial("HELMET","leather",models.pony.Root.body.neck.head.Helmet_L)
 KCM.addModelPartToMaterial("CHESTPLATE","leather",models.pony.Root.body.Chestplate_L,models.pony.Root.body.neck.Neckpiece_L)
