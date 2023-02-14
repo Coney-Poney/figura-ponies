@@ -4,6 +4,7 @@
  - Shebang: Repository management/organization
  - KitCat962: Events + Armor API
  - GrandpaScout: Animation Blend Library
+ - Limit: 90% of the code optimization
  
  
 The ponies are here for [Figura Rewrite!](https://modrinth.com/mod/figura) (Version 0.1.0-rc.13 as of writting this) If you want to be a little pony, now you can!
