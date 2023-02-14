@@ -4,37 +4,47 @@ local toggle = action_wheel:newPage()
 toggle:newAction()
 :title("Toggle Wings")
 :item("minecraft:elytra")
-:onToggle(function () pings.Wings() end)
+:onToggle(function ()
+    Wings = not Wings
+    pings.Wings() end)
 function pings.Wings()
     if Wings then
-        Wings = false
+        models.pony.Root.body.left_wing:setVisible(true)
+        models.pony.Root.body.right_wing:setVisible(true)
+        models.pony.Root.body.left_wing:setUVPixels(0, 0)
+        models.pony.Root.body.right_wing:setUVPixels(0, 0)
     else
-        Wings = true
+        models.pony.Root.body.left_wing:setUVPixels(0, 14)
+        models.pony.Root.body.right_wing:setUVPixels(0, 14)
     end
 end
 
 toggle:newAction()
 :title("Toggle Horn")
 :item("minecraft:end_rod")
-:onToggle(function () pings.Horn() end)
+:onToggle(function () 
+    Horn = not Horn
+    pings.Horn() end)
 function pings.Horn()
-    if models.pony.Root.body.neck.head.horn:getVisible() then
-        models.pony.Root.body.neck.head.horn:setVisible(false)
-    else
-        models.pony.Root.body.neck.head.horn:setVisible(true)
-    end
+    models.pony.Root.body.neck.head.horn:setVisible(Horn)
 end
 
 toggle:newAction()
 :title("Toggle Magic")
 :item("minecraft:nether_star")
-:onToggle(function () pings.Magic() end)
+:onToggle(function () 
+    Magic = not Magic
+    pings.Magic() end)
 function pings.Magic()
-    if Magic then
-        Magic = false
-        models.pony.Root.body.neck.head.horn_glow:setVisible(false)
+    models.pony.Root.right_front_leg.RIGHT_ITEM_PIVOT:setVisible(not Magic)
+    models.pony.Root.left_front_leg.LEFT_ITEM_PIVOT:setVisible(not Magic)
+    if Magic then -- Magic Aura
+        models.pony.Root.left_front_leg:offsetRot(0,0,0)
+        models.pony.Root.right_front_leg:offsetRot(0,0,0)
     else
-        Magic = true
+        models.pony.RightArm.RightArm:setVisible(false)
+        models.pony.LeftArm.LeftArm:setVisible(false)
+        models.pony.Root.body.neck.head.horn_glow:setVisible(false)
     end
 end
 
@@ -83,6 +93,48 @@ function pings.dance()
     end
 end
 
+emotes:newAction()
+:title("Spin")
+:item("minecraft:nautilus_shell")
+:onLeftClick(function ()
+    pings.spin()
+end)
+function pings.spin()
+    if emote == 4 then
+        emote = 0
+    else
+        emote = 4
+    end
+end
+
+emotes:newAction()
+:title("Loaf")
+:item("minecraft:bread")
+:onLeftClick(function ()
+    pings.loaf()
+end)
+function pings.loaf()
+    if emote == 5 then
+        emote = 0
+    else
+        emote = 5
+    end
+end
+
+emotes:newAction()
+:title("Gangnam Style")
+:item("minecraft:music_disc_stal")
+:onLeftClick(function ()
+    pings.gStyle()
+end)
+function pings.gStyle()
+    if emote == 6 then
+        emote = 0
+    else
+        emote = 6
+    end
+end
+
 --ROOT--
 local rootPage = action_wheel:newPage()
 
@@ -100,6 +152,15 @@ rootPage:newAction()
     action_wheel:setPage(emotes)
 end)
 
+rootPage:newAction()
+:title("debug")
+:item("minecraft:jukebox")
+:onLeftClick(function ()
+    for _, anim in ipairs(animations:getPlaying()) do
+        print(anim)
+    end
+end)
+
 events.TICK:register(function()
     if not action_wheel:isEnabled() then
        action_wheel:setPage(rootPage)
@@ -107,3 +168,7 @@ events.TICK:register(function()
 end)
 
 action_wheel:setPage(rootPage)
+
+pings.Magic()
+pings.Wings()
+pings.Horn()

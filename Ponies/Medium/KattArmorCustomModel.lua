@@ -48,7 +48,7 @@ require((...):gsub("(.)$", "%1.") .. "KattArmorAPI").onChange:register(function(
   if parts[armorID][material or false] then
     local visible = arg.visible and nil
     for _, modelPart in ipairs(parts[armorID][material or false]) do
-      modelPart:setVisible(not visible)
+      modelPart:setVisible(visible)
     end
   end
 end)
