@@ -152,14 +152,6 @@ rootPage:newAction()
     action_wheel:setPage(emotes)
 end)
 
-rootPage:newAction()
-:title("debug")
-:item("minecraft:jukebox")
-:onLeftClick(function ()
-    for _, anim in ipairs(animations:getPlaying()) do
-        print(anim)
-    end
-end)
 
 events.TICK:register(function()
     if not action_wheel:isEnabled() then
