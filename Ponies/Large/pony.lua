@@ -4,9 +4,19 @@ vanilla_model.HELMET_ITEM:setVisible(true)
 vanilla_model.PARROTS:setVisible(true)
 
 -- pony stuff
-Magic = true
-Wings = true
-Horn = true
+if rawequal(next(config:load()), nil) then
+	local InitValues = require("InitValues")
+	config:save("Magic", Magic)
+	config:save("Wings", Wings)
+	config:save("Horn", Horn)
+	Magic = config:load("Magic")
+	Wings = config:load("Wings")
+	Horn = config:load("Horn")
+else
+	Magic = config:load("Magic")
+	Wings = config:load("Wings")
+	Horn = config:load("Horn")
+end
 
 -- ArmorAPI
 local ArmorAPI = require("KattArmorAPI")

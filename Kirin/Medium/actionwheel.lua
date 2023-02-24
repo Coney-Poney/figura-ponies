@@ -2,10 +2,12 @@
 local toggle = action_wheel:newPage()
 
 toggle:newAction()
+:toggled(config:load("Wings"))
 :title("Toggle Wings")
 :item("minecraft:elytra")
 :onToggle(function ()
     Wings = not Wings
+    config:save("Wings", Wings)
     pings.Wings() end)
 function pings.Wings()
     if Wings then
@@ -20,20 +22,24 @@ function pings.Wings()
 end
 
 toggle:newAction()
+:toggled(config:load("Horn"))
 :title("Toggle Horn")
 :item("minecraft:end_rod")
 :onToggle(function () 
     Horn = not Horn
+    config:save("Horn", Horn)
     pings.Horn() end)
 function pings.Horn()
     models.pony.Root.body.neck.head.horn:setVisible(Horn)
 end
 
 toggle:newAction()
+:toggled(config:load("Magic"))
 :title("Toggle Magic")
 :item("minecraft:nether_star")
 :onToggle(function () 
     Magic = not Magic
+    config:save("Magic", Magic)
     pings.Magic() end)
 function pings.Magic()
     models.pony.Root.right_front_leg.RIGHT_ITEM_PIVOT:setVisible(not Magic)
