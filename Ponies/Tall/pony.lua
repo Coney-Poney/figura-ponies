@@ -31,7 +31,7 @@ ArmorAPI.addBoots(
     modelsponyRoot.right_back_leg.Boots
 )
 
-if textures["Textures.leather'"] ~= nil then --find texutre files
+if textures["Textures.leather"] ~= nil then --find texutre files
     KCT.assignTextureToMaterial("leather",textures["Textures.leather"])
     KCT.assignTextureToMaterial("chainmail",textures["Textures.chainmail"])
     KCT.assignTextureToMaterial("iron",textures["Textures.iron"])
