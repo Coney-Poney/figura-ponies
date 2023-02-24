@@ -88,8 +88,8 @@ events.TICK:register(function()
             animationspony.crossR:setPlaying(crossR)
         end
         if crossL ~= (leftItem.tag and leftItem.tag["Charged"] == 1) then
-            crossR = rightItem.tag and rightItem.tag["Charged"] == 1
-            animationspony.crossR:setPlaying(crossL)
+            crossL = leftItem.tag and leftItem.tag["Charged"] == 1
+            animationspony.crossL:setPlaying(crossL)
         end
 
         if using then
