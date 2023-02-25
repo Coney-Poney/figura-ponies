@@ -1,11 +1,12 @@
-# Customizable Pony Avatar (V2.0.0)
+# Customizable Pony Avatar (V3.0.0)
 ## Credits
  - wtrClover: Model creator
  - Shebang: Repository management/organization
  - KitCat962: Events + Armor API
  - GrandpaScout: Animation Blend Library
+ - Limit: 90% of the code optimization
  
- 
+## Description
 The ponies are here for [Figura Rewrite!](https://modrinth.com/mod/figura) (Version 0.1.0-rc.13 as of writting this) If you want to be a little pony, now you can!
 
 Thanks to KitCat962 for making the Events and Armor API
@@ -17,22 +18,22 @@ Thanks to GNamimates for the code inspiration
 And Thanks to 'Fran' for making 'Figura,' the mod that made this possible in the first place!
 
 - Support and unique textures for all armor types.
-- Support for making your own pony using the example models as an base.
- - Three Body types
-  - Tall
-  - Large
-  - Medium
- - 5 Species
-  - Ponies (and donkeys/mules)
-  - Changelings
-  - Griffons
-  - Hippogriffs
-  - Kirins
-- 3 custom emotes in action wheel.
- - 'Siting'
- - 'Yee Haw'
- - 'Dancing'
 - Togglable Horns and Wings
+- Support for making your own pony using the example models as an base.
+   - Three Body types
+     - Tall
+     - Large
+     - Medium
+  - 5 Species
+    - Ponies (and donkeys/mules)
+    - Changelings
+    - Griffons
+    - Hippogriffs
+    - Kirins
+  - 3 custom emotes in action wheel.
+    - 'Siting'
+    - 'Yee Haw'
+    - 'Dancing'
 
 Community models are found here! [Link](https://github.com/Coney-Poney/figura-ponies-community)
 
