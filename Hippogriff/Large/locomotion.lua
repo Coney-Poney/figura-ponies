@@ -20,7 +20,7 @@ local crossR, crossL
 local using_index = {
     DRINK = 1, EAT = 2, BLOCK = 3, BOW = 4, SPEAR = 5, SPYGLASS = 6, TOOT_HORN = 7, CROSSBOW = 8
 } --table for lookup indices
-local rvalue, lvalue = 0, action_count --lrvalue to detect what to turn on/off 
+local rvalue, lvalue = 0, action_count --value to detect what to turn on/off for left/right hoof
 
 local emote_list = {
     [0] = notuse, animationspony.Yee_Haw, animationspony.sit, animationspony.dance, animationspony.spin, animationspony.loaf, animationspony.gStyle
@@ -34,14 +34,14 @@ local emote_switch = emote
 local GSBlend = require("GSAnimBlend") -- Instruction count goes brrrrr
 --GSBlend.safe = false -- turning this off crashes game when reload :D 
 
---animationspony.idle:setPriority(-1)
---animationspony.idle:play()
-
 -- Animations
 events.TICK:register(function()
     lrot = rot
     rot = vanilla_model.HEAD:getOriginRot()
     vel = player:getVelocity()
+    local hand = player:isLeftHanded()
+    local rightHand = hand and "OFF_HAND" or "MAIN_HAND"
+    local leftHand = not hand and "OFF_HAND" or "MAIN_HAND"
     local rightItem = player:getHeldItem(hand)
     local leftItem = player:getHeldItem(not hand)
     local isClimb = player:isClimbing()
@@ -58,9 +58,6 @@ events.TICK:register(function()
     )
     local distance_travel = localVel:length()
     local movingstate = isClimb or isFlying or vehicle or (pose ~= "STANDING" and pose ~= "CROUCHING")
-    local hand = player:isLeftHanded()
-    local rightHand = hand and "OFF_HAND" or "MAIN_HAND"
-    local leftHand = not hand and "OFF_HAND" or "MAIN_HAND"
     local using = player:isUsingItem()
     local active = player:getActiveHand()
     local usingR, usingL
@@ -335,7 +332,7 @@ events.TICK:register(function()
     if vehicle ~= player:getVehicle() then
         vehicle = player:getVehicle()
         if vehicle then
-            emote_list[2]:play()
+            emote_list[2]:play() -- sit or not sit
         else
             emote_list[2]:stop()
         end
@@ -410,7 +407,7 @@ events.RENDER:register(function (t,ctx)
             modelsponyRoot.left_front_leg:offsetRot(r.x * 0.9, r.y, 0)
             modelsponyRoot.right_front_leg:offsetRot(r.x * 0.9, r.y, 0)
         end
-        if ravlue == 6 or rvalue == 7 or rvalue == 2 or rvalue == 1 then --spyglassR, hornR, eatingR, drinkingR
+        if rvalue == 6 or rvalue == 7 or rvalue == 2 or rvalue == 1 then --spyglassR, hornR, eatingR, drinkingR
             modelsponyRoot.right_front_leg:offsetRot(r.x * 0.75, r.y * 0.9, 0)
         elseif lvalue == 15 or lvalue == 16 or lvalue == 11 or lvalue == 10 then --spyglassL, hornL, eatingL ,drinkingL
             modelsponyRoot.left_front_leg:offsetRot(r.x * 0.75, r.y * 0.9, 0)
