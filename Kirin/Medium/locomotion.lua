@@ -417,9 +417,8 @@ events.RENDER:register(function (t,ctx)
         end
     end
 
-    modelsponyRoot.body.neck.head:setRot(r.x * 0.85, r.y * 0.8, 0)
-    modelsponyRoot.body.neck:setRot(r.x * 0.15, r.y * 0.15, 0)
-    modelsponyRoot:setRot(0, r.y * 0.05, 0)
+    modelsponyRoot.body.neck.head:setRot(r.x * 0.85, r.y, 0)
+    modelsponyRoot.body.neck:setRot(r.x * 0.15, 0, 0)
     modelsponyRoot.body.Tail:setRot(vanilla_model.FAKE_CAPE:getOriginRot() + vec(15,0,0))
     models.pony.RightArm.r_front_leg:setVisible(ctx == "FIRST_PERSON" and not Magic)
     models.pony.LeftArm.l_front_leg:setVisible(ctx == "FIRST_PERSON" and not Magic)
