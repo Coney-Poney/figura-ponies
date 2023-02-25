@@ -1,0 +1,31 @@
+# This file contains the variables for each species, it also has a generic fallback if the model you select doesn't have values in here.
+
+[generic]
+Horn = true
+Magic = true
+Wings = true
+
+[changeling]
+Horn = true
+Magic = true
+Wings = true
+
+[pony]
+Horn = true
+Magic = true
+Wings = true
+
+[griffon]
+Horn = false
+Magic = false
+Wings = true
+
+[hippogriff]
+Horn = false
+Magic = false
+Wings = true
+
+[kirin]
+Horn = true
+Magic = true
+Wings = false
