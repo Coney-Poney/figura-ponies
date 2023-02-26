@@ -25,7 +25,6 @@ parser.add_argument('model',
                     choices=os.listdir("./models") + ["all", "clean"], 
                     help="Will determine the model type of the export, 'all' will batch build every possible model, 'clean' will clean out the build directory.")
 args = parser.parse_args()
-#print(args)
 
 def pony_builder(model, size):
     # Checks for build path, creates it if not found
@@ -42,8 +41,7 @@ def pony_builder(model, size):
                 print("Deleting old build and rebuilding...")
                 shutil.rmtree(buildpath)
             else:
-                print("Exiting.")
-                sys.exit(0)
+                return
     # Pre-check if the size exists, exits with an error code if not
     if not os.path.isfile(f"./models/{model}/{size}.bbmodel"):
         print("ERROR: This Size of model does not exist.")
@@ -77,11 +75,6 @@ def pony_builder(model, size):
         if os.path.exists(f"./build/release/{model}-{size}.zip"):
             os.remove(f"./build/release/{model}-{size}.zip")
         shutil.make_archive(f"./build/release/{model}-{size}", "zip", root_dir="./build", base_dir=f"./{model}-{size}")
-
-
-
-
-
 
 if __name__ == "__main__":
     # Cleans out the build directory. squeaky clean!
