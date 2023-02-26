@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import os
-import sys
-import fileinput
+import re
 import shutil
+import sys
 import tomllib
 from argparse import ArgumentParser
 
-#cwd = os.getcwd()
 parser = ArgumentParser(
         description = 'Builds Figura-Ponies models for either development or release.', 
         epilog = 'Be sure to read the documentation! -#!')
@@ -23,22 +22,22 @@ parser.add_argument('-f',
                     action='store_true',
                     help="Disables the pre-existing build check, automatically overwriting old builds.")
 parser.add_argument('model', 
-                    choices=os.listdir("./models"), 
-                    help="Will determine the model type of the export.")
+                    choices=os.listdir("./models") + ["all", "clean"], 
+                    help="Will determine the model type of the export, 'all' will batch build every possible model, 'clean' will clean out the build directory.")
 args = parser.parse_args()
 #print(args)
 
-def pony_builder():
+def pony_builder(model, size):
     # Checks for build path, creates it if not found
     if not os.path.exists("./build"):
         os.mkdir("./build")
     # Define buildpath for keeping code clean
-    buildpath = f"./build/{args.model}-{args.size}"
+    buildpath = f"./build/{model}-{size}"
     if os.path.exists(buildpath):
         if args.force == True:
             shutil.rmtree(buildpath)
         else:
-            exitprompt = input("A pre-existing build exists here! Overwrite it? (y/n)\n> ").lower()
+            exitprompt = input(f"A pre-existing build exists here! Overwrite {buildpath}? (y/n)\n> ").lower()
             if exitprompt == ("y"):
                 print("Deleting old build and rebuilding...")
                 shutil.rmtree(buildpath)
@@ -46,19 +45,19 @@ def pony_builder():
                 print("Exiting.")
                 sys.exit(0)
     # Pre-check if the size exists, exits with an error code if not
-    if not os.path.isfile(f"./models/{args.model}/{args.size}.bbmodel"):
+    if not os.path.isfile(f"./models/{model}/{size}.bbmodel"):
         print("ERROR: This Size of model does not exist.")
         sys.exit(1)
     # Copy lua scripts and avatar.json from ./src to build destination
     shutil.copytree("./src", buildpath)
     # Copy textures from model to build destination
-    shutil.copytree(f"./models/{args.model}/textures", f"{buildpath}/textures")
+    shutil.copytree(f"./models/{model}/textures", f"{buildpath}/textures")
     # Copy BlockBench model for model and size to build destination as pony.bbmodel
-    shutil.copy(f"./models/{args.model}/{args.size}.bbmodel", f"{buildpath}/pony.bbmodel")
+    shutil.copy(f"./models/{model}/{size}.bbmodel", f"{buildpath}/pony.bbmodel")
     # Open avatar.json, read it's contents, replace MODEL and SIZE placeholders with relevant data, and write it
     with open(f"{buildpath}/avatar.json", "r") as file:
         avatarjson = file.read()
-    avatarjson = avatarjson.replace('MODEL', args.model.capitalize()).replace('SIZE', args.size.capitalize())
+    avatarjson = avatarjson.replace('MODEL', model.capitalize()).replace('SIZE', size.capitalize())
     with open(f"{buildpath}/avatar.json", "w") as file:
         file.write(avatarjson)
     # Open InitValues.lua, replace Horn, Magic, and Wings values with corresponding values in config.toml
@@ -67,15 +66,49 @@ def pony_builder():
         initvalues = file.read()
     with open("./config.toml", "rb") as file:
         data = tomllib.load(file)
-    initvalues = initvalues.replace("Horn = true", f"Horn = {str(data[args.model]['Horn']).lower()}")\
-    .replace("Magic = true", f"Magic = {str(data[args.model]['Magic']).lower()}")\
-    .replace("Wings = true", f"Wings = {str(data[args.model]['Wings']).lower()}")
+    initvalues = initvalues.replace("Horn = true", f"Horn = {str(data[model]['Horn']).lower()}")\
+    .replace("Magic = true", f"Magic = {str(data[model]['Magic']).lower()}")\
+    .replace("Wings = true", f"Wings = {str(data[model]['Wings']).lower()}")
     with open(f"{buildpath}/InitValues.lua", "w") as file:
         file.write(initvalues)
+    if args.zip == True:
+        if not os.path.exists("./build/release"):
+            os.mkdir("./build/release")
+        if os.path.exists(f"./build/release/{model}-{size}.zip"):
+            os.remove(f"./build/release/{model}-{size}.zip")
+        shutil.make_archive(f"./build/release/{model}-{size}", "zip", root_dir="./build", base_dir=f"./{model}-{size}")
+
 
 
 
 
 
 if __name__ == "__main__":
-    pony_builder()
+    # Cleans out the build directory. squeaky clean!
+    if args.model == "clean":
+        print("Cleaning build directory.")
+        shutil.rmtree("./build")
+        sys.exit(0)
+    # Runs a batch build of every model in ./models
+    elif args.model == "all":
+        for m in os.listdir("./models/"):
+            if args.size == None:
+                possiblesizes = []
+                for i in os.listdir(f"./models/{m}"):
+                    if i.endswith(".bbmodel"):
+                        possiblesizes.append(re.sub(".bbmodel$","",i))
+                for s in possiblesizes:
+                    pony_builder(m, s)
+            else:
+                pony_builder(m, args.size)
+    # Builds every size of a specific model if size is not specified.
+    elif args.size == None:
+        possiblesizes = []
+        for i in os.listdir(f"./models/{args.model}"):
+            if i.endswith(".bbmodel"):
+                possiblesizes.append(re.sub(".bbmodel$","",i))
+        for i in possiblesizes:
+            pony_builder(args.model, i)
+    # When the stars align, it builds with the specified model and size.
+    else:
+        pony_builder(args.model, args.size)
