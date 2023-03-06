@@ -80,8 +80,12 @@ if __name__ == "__main__":
     # Cleans out the build directory. squeaky clean!
     if args.model == "clean":
         print("Cleaning build directory.")
-        shutil.rmtree("./build")
-        sys.exit(0)
+        try:
+            shutil.rmtree("./build")
+            sys.exit(0)
+        except FileNotFoundError:
+            print("No build directory found.")
+            sys.exit(1)
     # Runs a batch build of every model in ./models
     elif args.model == "all":
         for m in os.listdir("./models/"):
