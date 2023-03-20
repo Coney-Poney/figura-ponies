@@ -47,7 +47,7 @@ events.TICK:register(function()
     local isClimb = player:isClimbing()
     local isOnGround = player:isOnGround()
     local isVisuallySwimming = player:isVisuallySwimming()
-    local isFlying = player:isFlying()
+    local isFlying = host:isFlying()
     local isAlive = player:isAlive()
     local isInWater = player:isInWater()
     local isUnderwater = player:isUnderwater()
@@ -200,25 +200,25 @@ events.TICK:register(function()
 
     if not movingstate then -- Locomotion  --not climb, not fly, not vehicle, stand or crouch
         if movingstate_switch ~= movingstate then      --switch
-            if animationspony.climb:getPlayState() == "PLAYING" then
+            if animationspony.climb:isPlaying() then
                 animationspony.climb:stop()
             end
-            if animationspony.swim:getPlayState() == "PLAYING" then
+            if animationspony.swim:isPlaying() then
                 animationspony.swim:stop()
             end
-            if animationspony.crawl:getPlayState() == "PLAYING" then
+            if animationspony.crawl:isPlaying() then
                 animationspony.crawl:stop()
             end
-            if animationspony.flying:getPlayState() == "PLAYING" then
+            if animationspony.flying:isPlaying() then
                 animationspony.flying:stop()
             end
-            if animationspony.flyingdown:getPlayState() == "PLAYING" then
+            if animationspony.flyingdown:isPlaying() then
                 animationspony.flyingdown:stop()
             end
-            if animationspony.sleeping:getPlayState() == "PLAYING" then
+            if animationspony.sleeping:isPlaying() then
                 animationspony.sleeping:stop()
             end
-            if animationspony.spinattack:getPlayState() == "PLAYING" then
+            if animationspony.spinattack:isPlaying() then
                 animationspony.spinattack:stop()
             end
             movingstate_switch = movingstate
@@ -263,19 +263,19 @@ events.TICK:register(function()
         end
     else
         if movingstate_switch ~= movingstate then
-            if animationspony.jumpup:getPlayState() == "PLAYING" then
+            if animationspony.jumpup:isPlaying() then
                 animationspony.jumpup:stop()
             end
-            if animationspony.jumpdown:getPlayState() == "PLAYING" then
+            if animationspony.jumpdown:isPlaying() then
                 animationspony.jumpdown:stop()
             end
-            if animationspony.fall:getPlayState() == "PLAYING" then
+            if animationspony.fall:isPlaying() then
                 animationspony.fall:stop()
             end
-            if animationspony.sprint:getPlayState() == "PLAYING" then
+            if animationspony.sprint:isPlaying() then
                 animationspony.sprint:stop()
             end
-            if animationspony.walk:getPlayState() == "PLAYING" then
+            if animationspony.walk:isPlaying() then
                 animationspony.walk:stop()
             end
             movingstate_switch = movingstate
@@ -346,7 +346,7 @@ events.TICK:register(function()
             emote_list[emote]:play()
         end
     end
-    
+
     if Magic then -- Magic Aura
         if rvalue == 4 or rvalue == 8 or lvalue == 13 or lvalue == 17 or crossL or crossR then --bowingR, loadingR, bowingL, loadingL
             if not LeftArm_vis then
