@@ -7,24 +7,29 @@ import tomllib
 from argparse import ArgumentParser
 
 parser = ArgumentParser(
-        description = 'Builds Figura-Ponies models for either development or release.', 
-        epilog = 'Be sure to read the documentation! -#!')
-parser.add_argument('-s', 
-                    '--size', 
-                    choices=['large', 'medium', 'tall'], 
+        description='Builds Figura-Ponies models for either development\
+     or release.',
+        epilog='Be sure to read the documentation! -#!')
+parser.add_argument('-s',
+                    '--size',
+                    choices=['large', 'medium', 'tall'],
                     help="Will determine the body type of the export.")
-parser.add_argument('-z', 
-                    '--zip', 
+parser.add_argument('-z',
+                    '--zip',
                     action='store_true',
                     help="Zips the model for release.")
-parser.add_argument('-f', 
-                    '--force', 
+parser.add_argument('-f',
+                    '--force',
                     action='store_true',
-                    help="Disables the pre-existing build check, automatically overwriting old builds.")
-parser.add_argument('model', 
-                    choices=os.listdir("./models") + ["all", "clean"], 
-                    help="Will determine the model type of the export, 'all' will batch build every possible model, 'clean' will clean out the build directory.")
+                    help="Disables the pre-existing build check, automatically\
+     overwriting old builds.")
+parser.add_argument('model',
+                    choices=os.listdir("./models") + ["all", "clean"],
+                    help="Will determine the model type of the export, 'all'\
+     will batch build every possible model,\
+     'clean' will clean out the build directory.")
 args = parser.parse_args()
+
 
 def pony_builder(model, size):
     # Checks for build path, creates it if not found
@@ -33,10 +38,11 @@ def pony_builder(model, size):
     # Define buildpath for keeping code clean
     buildpath = f"./build/{model}-{size}"
     if os.path.exists(buildpath):
-        if args.force == True:
+        if args.force is True:
             shutil.rmtree(buildpath)
         else:
-            exitprompt = input(f"A pre-existing build exists here! Overwrite {buildpath}? (y/n)\n> ").lower()
+            exitprompt = input(f"A pre-existing build exists here!\
+                 Overwrite {buildpath}? (y/n)\n> ").lower()
             if exitprompt == ("y"):
                 print("Deleting old build and rebuilding...")
                 shutil.rmtree(buildpath)
@@ -69,12 +75,13 @@ def pony_builder(model, size):
     .replace("Wings = true", f"Wings = {str(data[model]['Wings']).lower()}")
     with open(f"{buildpath}/InitValues.lua", "w") as file:
         file.write(initvalues)
-    if args.zip == True:
+    if args.zip is True:
         if not os.path.exists("./build/release"):
             os.mkdir("./build/release")
         if os.path.exists(f"./build/release/{model}-{size}.zip"):
             os.remove(f"./build/release/{model}-{size}.zip")
         shutil.make_archive(f"./build/release/{model}-{size}", "zip", root_dir="./build", base_dir=f"./{model}-{size}")
+
 
 if __name__ == "__main__":
     # Cleans out the build directory. squeaky clean!
@@ -89,7 +96,7 @@ if __name__ == "__main__":
     # Runs a batch build of every model in ./models
     elif args.model == "all":
         for m in os.listdir("./models/"):
-            if args.size == None:
+            if args.size is None:
                 possiblesizes = []
                 for i in os.listdir(f"./models/{m}"):
                     if i.endswith(".bbmodel"):
@@ -99,7 +106,7 @@ if __name__ == "__main__":
             else:
                 pony_builder(m, args.size)
     # Builds every size of a specific model if size is not specified.
-    elif args.size == None:
+    elif args.size is None:
         possiblesizes = []
         for i in os.listdir(f"./models/{args.model}"):
             if i.endswith(".bbmodel"):
