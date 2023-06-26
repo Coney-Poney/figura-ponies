@@ -80,12 +80,12 @@ events.TICK:register(function()
     end
 
     if not Magic then
-        if crossR ~= (rightItem.tag and rightItem.tag["Charged"] == 1) then
-            crossR = rightItem.tag and rightItem.tag["Charged"] == 1
+        if crossR ~= (rightItem.tag and rightItem.tag["Charged"] == 1) or (rightItem.id == "create:potato_cannon" or rightItem.id == "create:handheld_worldshaper") then
+            crossR = (rightItem.tag and rightItem.tag["Charged"] == 1) or (rightItem.id == "create:potato_cannon" or rightItem.id == "create:handheld_worldshaper")
             animationspony.crossR:setPlaying(crossR)
         end
-        if crossL ~= (leftItem.tag and leftItem.tag["Charged"] == 1) then
-            crossL = leftItem.tag and leftItem.tag["Charged"] == 1
+        if crossL ~= (leftItem.tag and leftItem.tag["Charged"] == 1) or (leftItem.id == "create:potato_cannon" or leftItem.id == "create:handheld_worldshaper") and not crossR then
+            crossL = (leftItem.tag and leftItem.tag["Charged"] == 1) or (leftItem.id == "create:potato_cannon" or leftItem.id == "create:handheld_worldshaper") and not crossR
             animationspony.crossL:setPlaying(crossL)
         end
 
@@ -363,6 +363,10 @@ events.TICK:register(function()
         models.pony.LeftArm.LeftArm:setVisible(LeftArm_vis)
         models.pony.RightArm.RightArm:setVisible(RightArm_vis)
         modelsponyRoot.body.neck.head.horn_glow:setVisible(horn_glow_vis)
+    else
+        models.pony.LeftArm.LeftArm:setVisible(false)
+        models.pony.RightArm.RightArm:setVisible(false)
+        modelsponyRoot.body.neck.head.horn_glow:setVisible(false)
     end
 
     if not Wings then
