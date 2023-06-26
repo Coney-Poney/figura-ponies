@@ -48,6 +48,7 @@ if textures["Textures.leather"] ~= nil then --find texutre files
         kattArmor.Materials.diamond:setTexture(textures["Textures.diamond"])
         kattArmor.Materials.netherite:setTexture(textures["Textures.netherite"])
         kattArmor.Materials.turtle:setTexture(textures["Textures.turtle"])
+        kattArmor.Materials.diving:setTexture(textures["Textures.diving"])
 elseif textures["pony.leather"] ~= nil then
         kattArmor.Materials.leather:setTexture(textures["pony.leather"])
         kattArmor.Materials.chainmail:setTexture(textures["pony.chainmail"])
@@ -56,6 +57,7 @@ elseif textures["pony.leather"] ~= nil then
         kattArmor.Materials.diamond:setTexture(textures["pony.diamond"])
         kattArmor.Materials.netherite:setTexture(textures["pony.netherite"])
         kattArmor.Materials.turtle:setTexture(textures["pony.turtle"])
+        kattArmor.Materials.diving:setTexture(textures["Textures.diving"])
 end
 
 kattArmor.Materials.leather:addParts(kattArmor.Armor.Helmet, modelsponyRoot.body.neck.head.Helmet_L)
