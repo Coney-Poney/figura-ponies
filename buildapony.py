@@ -81,7 +81,7 @@ def pony_builder(model, size):
             os.mkdir("./build/release")
         if os.path.exists(f"./build/release/{model}-{size}.zip"):
             os.remove(f"./build/release/{model}-{size}.zip")
-        shutil.make_archive(f"./build/release/{model}-{size}", "zip", root_dir="./build", base_dir=f"./{model}-{size}")
+        shutil.make_archive(f"./build/release/{model}-{size}", "zip", root_dir=f"./build/{model}-{size}", base_dir="./")
 
 
 if __name__ == "__main__":
