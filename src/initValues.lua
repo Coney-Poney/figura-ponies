@@ -1,7 +1,7 @@
-local initvalues = {
+local initValues = {
 	Magic = true,
 	Wings = true,
 	Horn = true,
 }
 
-return initvalues
+return initValues

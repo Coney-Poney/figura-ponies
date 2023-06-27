@@ -55,25 +55,27 @@ def pony_builder(model, size):
     # Copy lua scripts and avatar.json from ./src to build destination
     shutil.copytree("./src", buildpath)
     # Copy textures from model to build destination
-    shutil.copytree(f"./models/{model}/textures", f"{buildpath}/textures")
+    shutil.copytree(f"./models/{model}/textures", f"{buildpath}/Textures")
     # Copy BlockBench model for model and size to build destination as pony.bbmodel
     shutil.copy(f"./models/{model}/{size}.bbmodel", f"{buildpath}/pony.bbmodel")
     # Open avatar.json, read it's contents, replace MODEL and SIZE placeholders with relevant data, and write it
     with open(f"{buildpath}/avatar.json", "r") as file:
         avatarjson = file.read()
-    avatarjson = avatarjson.replace('MODEL', model.capitalize()).replace('SIZE', size.capitalize())
+    avatarjson = avatarjson.replace('$MODEL', model.capitalize()).replace('$SIZE', size.capitalize())
+    print(avatarjson)
     with open(f"{buildpath}/avatar.json", "w") as file:
         file.write(avatarjson)
     # Open InitValues.lua, replace Horn, Magic, and Wings values with corresponding values in config.toml
     # Will fall back to the "generic" values in config.toml if there's no corresponding data
-    with open(f"{buildpath}/InitValues.lua", "r") as file:
+    with open(f"{buildpath}/initValues.lua", "r") as file:
         initvalues = file.read()
     with open("./config.toml", "rb") as file:
         data = tomllib.load(file)
-    initvalues = initvalues.replace("Horn = true", f"Horn = {str(data[model]['Horn']).lower()}")\
+    initvalues = initvalues\
+    .replace("Horn = true", f"Horn = {str(data[model]['Horn']).lower()}")\
     .replace("Magic = true", f"Magic = {str(data[model]['Magic']).lower()}")\
     .replace("Wings = true", f"Wings = {str(data[model]['Wings']).lower()}")
-    with open(f"{buildpath}/InitValues.lua", "w") as file:
+    with open(f"{buildpath}/initValues.lua", "w") as file:
         file.write(initvalues)
     if args.zip is True:
         if not os.path.exists("./build/release"):

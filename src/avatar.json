@@ -1,5 +1,5 @@
 {
-  "name": "SIZE MODEL",
+  "name": "$SIZE $MODEL",
   "authors": [
     "Coney Poney",
     "GrandpaScout",
@@ -8,5 +8,5 @@
   "autoScripts": [
     "pony"
   ],
-  "description": "MODEL template, SIZE"
+  "description": "$MODEL template, $SIZE"
 }

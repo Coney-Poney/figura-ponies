@@ -20,7 +20,7 @@ local crossR, crossL
 local using_index = {
     DRINK = 1, EAT = 2, BLOCK = 3, BOW = 4, SPEAR = 5, SPYGLASS = 6, TOOT_HORN = 7, CROSSBOW = 8
 } --table for lookup indices
-local rvalue, lvalue = 0, action_count --lrvalue to detect what to turn on/off 
+local rvalue, lvalue = 0, action_count --value to detect what to turn on/off for left/right hoof
 
 local emote_list = {
     [0] = notuse, animationspony.Yee_Haw, animationspony.sit, animationspony.dance, animationspony.spin, animationspony.loaf, animationspony.gStyle
@@ -31,23 +31,23 @@ local rightSwing, leftSwing = false, false
 local emote_switch = emote
 -----------for switch case-----------
 
-local GSBlend = require("GSAnimBlend") -- Instruction count goes brrrrr
+local GSBlend = require("gsAnimBlend") -- Instruction count goes brrrrr
 --GSBlend.safe = false -- turning this off crashes game when reload :D 
-
---animationspony.idle:setPriority(-1)
---animationspony.idle:play()
 
 -- Animations
 events.TICK:register(function()
     lrot = rot
     rot = vanilla_model.HEAD:getOriginRot()
     vel = player:getVelocity()
+    local hand = player:isLeftHanded()
+    local rightHand = hand and "OFF_HAND" or "MAIN_HAND"
+    local leftHand = not hand and "OFF_HAND" or "MAIN_HAND"
     local rightItem = player:getHeldItem(hand)
     local leftItem = player:getHeldItem(not hand)
     local isClimb = player:isClimbing()
     local isOnGround = player:isOnGround()
     local isVisuallySwimming = player:isVisuallySwimming()
-    local isFlying = player:isFlying()
+    local isFlying = host:isFlying()
     local isAlive = player:isAlive()
     local isInWater = player:isInWater()
     local isUnderwater = player:isUnderwater()
@@ -58,9 +58,6 @@ events.TICK:register(function()
     )
     local distance_travel = localVel:length()
     local movingstate = isClimb or isFlying or vehicle or (pose ~= "STANDING" and pose ~= "CROUCHING")
-    local hand = player:isLeftHanded()
-    local rightHand = hand and "OFF_HAND" or "MAIN_HAND"
-    local leftHand = not hand and "OFF_HAND" or "MAIN_HAND"
     local using = player:isUsingItem()
     local active = player:getActiveHand()
     local usingR, usingL
@@ -83,12 +80,12 @@ events.TICK:register(function()
     end
 
     if not Magic then
-        if crossR ~= (rightItem.tag and rightItem.tag["Charged"] == 1) then
-            crossR = rightItem.tag and rightItem.tag["Charged"] == 1
+        if crossR ~= (rightItem.tag and rightItem.tag["Charged"] == 1) or (rightItem.id == "create:potato_cannon" or rightItem.id == "create:handheld_worldshaper") then
+            crossR = (rightItem.tag and rightItem.tag["Charged"] == 1) or (rightItem.id == "create:potato_cannon" or rightItem.id == "create:handheld_worldshaper")
             animationspony.crossR:setPlaying(crossR)
         end
-        if crossL ~= (leftItem.tag and leftItem.tag["Charged"] == 1) then
-            crossL = leftItem.tag and leftItem.tag["Charged"] == 1
+        if crossL ~= (leftItem.tag and leftItem.tag["Charged"] == 1) or (leftItem.id == "create:potato_cannon" or leftItem.id == "create:handheld_worldshaper") and not crossR then
+            crossL = (leftItem.tag and leftItem.tag["Charged"] == 1) or (leftItem.id == "create:potato_cannon" or leftItem.id == "create:handheld_worldshaper") and not crossR
             animationspony.crossL:setPlaying(crossL)
         end
 
@@ -203,25 +200,25 @@ events.TICK:register(function()
 
     if not movingstate then -- Locomotion  --not climb, not fly, not vehicle, stand or crouch
         if movingstate_switch ~= movingstate then      --switch
-            if animationspony.climb:getPlayState() == "PLAYING" then
+            if animationspony.climb:isPlaying() then
                 animationspony.climb:stop()
             end
-            if animationspony.swim:getPlayState() == "PLAYING" then
+            if animationspony.swim:isPlaying() then
                 animationspony.swim:stop()
             end
-            if animationspony.crawl:getPlayState() == "PLAYING" then
+            if animationspony.crawl:isPlaying() then
                 animationspony.crawl:stop()
             end
-            if animationspony.flying:getPlayState() == "PLAYING" then
+            if animationspony.flying:isPlaying() then
                 animationspony.flying:stop()
             end
-            if animationspony.flyingdown:getPlayState() == "PLAYING" then
+            if animationspony.flyingdown:isPlaying() then
                 animationspony.flyingdown:stop()
             end
-            if animationspony.sleeping:getPlayState() == "PLAYING" then
+            if animationspony.sleeping:isPlaying() then
                 animationspony.sleeping:stop()
             end
-            if animationspony.spinattack:getPlayState() == "PLAYING" then
+            if animationspony.spinattack:isPlaying() then
                 animationspony.spinattack:stop()
             end
             movingstate_switch = movingstate
@@ -266,19 +263,19 @@ events.TICK:register(function()
         end
     else
         if movingstate_switch ~= movingstate then
-            if animationspony.jumpup:getPlayState() == "PLAYING" then
+            if animationspony.jumpup:isPlaying() then
                 animationspony.jumpup:stop()
             end
-            if animationspony.jumpdown:getPlayState() == "PLAYING" then
+            if animationspony.jumpdown:isPlaying() then
                 animationspony.jumpdown:stop()
             end
-            if animationspony.fall:getPlayState() == "PLAYING" then
+            if animationspony.fall:isPlaying() then
                 animationspony.fall:stop()
             end
-            if animationspony.sprint:getPlayState() == "PLAYING" then
+            if animationspony.sprint:isPlaying() then
                 animationspony.sprint:stop()
             end
-            if animationspony.walk:getPlayState() == "PLAYING" then
+            if animationspony.walk:isPlaying() then
                 animationspony.walk:stop()
             end
             movingstate_switch = movingstate
@@ -335,7 +332,7 @@ events.TICK:register(function()
     if vehicle ~= player:getVehicle() then
         vehicle = player:getVehicle()
         if vehicle then
-            emote_list[2]:play()
+            emote_list[2]:play() -- sit or not sit
         else
             emote_list[2]:stop()
         end
@@ -349,7 +346,7 @@ events.TICK:register(function()
             emote_list[emote]:play()
         end
     end
-    
+
     if Magic then -- Magic Aura
         if rvalue == 4 or rvalue == 8 or lvalue == 13 or lvalue == 17 or crossL or crossR then --bowingR, loadingR, bowingL, loadingL
             if not LeftArm_vis then
@@ -366,6 +363,10 @@ events.TICK:register(function()
         models.pony.LeftArm.LeftArm:setVisible(LeftArm_vis)
         models.pony.RightArm.RightArm:setVisible(RightArm_vis)
         modelsponyRoot.body.neck.head.horn_glow:setVisible(horn_glow_vis)
+    else
+        models.pony.LeftArm.LeftArm:setVisible(false)
+        models.pony.RightArm.RightArm:setVisible(false)
+        modelsponyRoot.body.neck.head.horn_glow:setVisible(false)
     end
 
     if not Wings then
@@ -410,16 +411,15 @@ events.RENDER:register(function (t,ctx)
             modelsponyRoot.left_front_leg:offsetRot(r.x * 0.9, r.y, 0)
             modelsponyRoot.right_front_leg:offsetRot(r.x * 0.9, r.y, 0)
         end
-        if ravlue == 6 or rvalue == 7 or rvalue == 2 or rvalue == 1 then --spyglassR, hornR, eatingR, drinkingR
+        if rvalue == 6 or rvalue == 7 or rvalue == 2 or rvalue == 1 then --spyglassR, hornR, eatingR, drinkingR
             modelsponyRoot.right_front_leg:offsetRot(r.x * 0.75, r.y * 0.9, 0)
         elseif lvalue == 15 or lvalue == 16 or lvalue == 11 or lvalue == 10 then --spyglassL, hornL, eatingL ,drinkingL
             modelsponyRoot.left_front_leg:offsetRot(r.x * 0.75, r.y * 0.9, 0)
         end
     end
 
-    modelsponyRoot.body.neck.head:setRot(r.x * 0.85, r.y * 0.8, 0)
-    modelsponyRoot.body.neck:setRot(r.x * 0.15, r.y * 0.15, 0)
-    modelsponyRoot:setRot(0, r.y * 0.05, 0)
+    modelsponyRoot.body.neck.head:setRot(r.x * 0.85, r.y, 0)
+    modelsponyRoot.body.neck:setRot(r.x * 0.15, 0, 0)
     modelsponyRoot.body.Tail:setRot(vanilla_model.FAKE_CAPE:getOriginRot() + vec(15,0,0))
     models.pony.RightArm.r_front_leg:setVisible(ctx == "FIRST_PERSON" and not Magic)
     models.pony.LeftArm.l_front_leg:setVisible(ctx == "FIRST_PERSON" and not Magic)
