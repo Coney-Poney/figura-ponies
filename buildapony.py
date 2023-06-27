@@ -62,7 +62,6 @@ def pony_builder(model, size):
     with open(f"{buildpath}/avatar.json", "r") as file:
         avatarjson = file.read()
     avatarjson = avatarjson.replace('$MODEL', model.capitalize()).replace('$SIZE', size.capitalize())
-    print(avatarjson)
     with open(f"{buildpath}/avatar.json", "w") as file:
         file.write(avatarjson)
     # Open InitValues.lua, replace Horn, Magic, and Wings values with corresponding values in config.toml
