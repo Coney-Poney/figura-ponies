@@ -80,8 +80,8 @@ events.TICK:register(function()
     end
 
     if not Magic then
-        if crossR ~= (rightItem.tag and rightItem.tag["Charged"] == 1) or (rightItem.id == "create:potato_cannon" or rightItem.id == "create:handheld_worldshaper") then
-            crossR = (rightItem.tag and rightItem.tag["Charged"] == 1) or (rightItem.id == "create:potato_cannon" or rightItem.id == "create:handheld_worldshaper")
+        if crossR ~= (rightItem.tag and rightItem.tag["Charged"] == 1) or (rightItem.id == "create:potato_cannon" or rightItem.id == "create:handheld_worldshaper") and not crossL then
+            crossR = (rightItem.tag and rightItem.tag["Charged"] == 1) or (rightItem.id == "create:potato_cannon" or rightItem.id == "create:handheld_worldshaper") and not crossL
             animationspony.crossR:setPlaying(crossR)
         end
         if crossL ~= (leftItem.tag and leftItem.tag["Charged"] == 1) or (leftItem.id == "create:potato_cannon" or leftItem.id == "create:handheld_worldshaper") and not crossR then
