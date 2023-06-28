@@ -1,0 +1,12 @@
+{
+  "name": "Medium Pony",
+  "authors": [
+    "Coney Poney",
+    "GrandpaScout",
+    "KitCat"
+  ],
+  "autoScripts": [
+    "pony"
+  ],
+  "description": "Pony template, Medium"
+}
