@@ -1,15 +1,15 @@
-# Customizable Pony Avatar (Experimental Refactoring) (V3.0.0)
+# Customizable Pony Avatar (Experimental Refactoring) (V3.1.0)
 ## Credits
- - wtrClover: Model creator
+ - wtrClover: Model creator/Texutres
  - Shebang: Repository management/organization
- - KitCat962: Events + Armor API
+ - KitCat962: Armor API
  - GrandpaScout: Animation Blend Library
  - Limit: 90% of the code optimization
  
 ## Description
 The ponies are here for [Figura Rewrite!](https://modrinth.com/mod/figura) (Version 0.1.0-rc.13 as of writting this) If you want to be a little pony, now you can!
 
-Thanks to KitCat962 for making the Events and Armor API
+Thanks to KitCat962 for her ArmorAPI
 
 Thanks to GrandpaScout for Animation Blend Library
 
@@ -18,6 +18,7 @@ Thanks to GNamimates for the code inspiration
 And Thanks to 'Fran' for making 'Figura,' the mod that made this possible in the first place!
 
 - Support and unique textures for all armor types.
+   - Create 5.1 Compatablity for both diving sets
 - Togglable Horns and Wings
 - Support for making your own pony using the example models as an base.
    - Three Body types
