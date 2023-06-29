@@ -48,7 +48,8 @@ if textures["Textures.leather"] ~= nil then --find texutre files
     kattArmor.Materials.diamond:setTexture(textures["Textures.diamond"])
     kattArmor.Materials.netherite:setTexture(textures["Textures.netherite"])
     kattArmor.Materials.turtle:setTexture(textures["Textures.turtle"])
-    kattArmor.Materials.diving:setTexture(textures["Textures.diving"])
+    kattArmor.Materials.copper_diving:setTexture(textures["Textures.copperdiving"])
+    kattArmor.Materials.netherite_diving:setTexture(textures["Textures.netheritediving"])
 elseif textures["pony.leather"] ~= nil then
     kattArmor.Materials.leather:setTexture(textures["pony.leather"])
     kattArmor.Materials.chainmail:setTexture(textures["pony.chainmail"])
@@ -57,7 +58,8 @@ elseif textures["pony.leather"] ~= nil then
     kattArmor.Materials.diamond:setTexture(textures["pony.diamond"])
     kattArmor.Materials.netherite:setTexture(textures["pony.netherite"])
     kattArmor.Materials.turtle:setTexture(textures["pony.turtle"])
-    kattArmor.Materials.diving:setTexture(textures["pony.diving"])
+    kattArmor.Materials.copper_diving:setTexture(textures["Textures.copperdiving"])
+    kattArmor.Materials.netherite_diving:setTexture(textures["ponys.netheritediving"])
 end
 
 kattArmor.Materials.leather:addParts(
@@ -84,10 +86,13 @@ kattArmor.Materials.leather:addParts(
 
 function kattArmor.onChange(partID, part, item, prevItem)
     if item:getName() == ("Copper Backtank") then
-        part:setMaterial("diving")
+        part:setMaterial("copper_diving")
+    elseif item:getName() == ("Netherite Backtank") then
+        part:setMaterial("netherite_diving")
     else
         part:setMaterial()
     end
+
     if item:getName():match("Helmet") then
         modelsponyRoot.body.neck.head.hair:setVisible(false)
     else
