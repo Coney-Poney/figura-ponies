@@ -84,6 +84,10 @@ kattArmor.Materials.leather:addParts(
     modelsponyRoot.right_back_leg.Boots_L
 )
 
+kattArmor.Materials[true]:addParts(kattArmor.Armor.Helmet,
+    modelsponyRoot.body.neck.head.hair
+)
+
 function kattArmor.onChange(partID, part, item, prevItem)
     if item:getName() == ("Copper Backtank") then
         part:setMaterial("copper_diving")
@@ -91,12 +95,6 @@ function kattArmor.onChange(partID, part, item, prevItem)
         part:setMaterial("netherite_diving")
     else
         part:setMaterial()
-    end
-
-    if item:getName():match("Helmet") then
-        modelsponyRoot.body.neck.head.hair:setVisible(false)
-    else
-        modelsponyRoot.body.neck.head.hair:setVisible(true)
     end
 end
 
