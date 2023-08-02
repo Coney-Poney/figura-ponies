@@ -6,12 +6,12 @@
 -- │ └─┐ └─────┘└─────┘ ┌─┘ │ --
 -- └───┘                └───┘ --
 ---@module  "Animation Blend Library" <GSAnimBlend>
----@version v1.7.3
+---@version v1.9.0
 ---@see     GrandpaScout @ https://github.com/GrandpaScout
 -- Adds prewrite-like animation blending to the rewrite.
 -- Also includes the ability to modify how the blending works per-animation with blending callbacks.
 --
--- Simply `require`ing this function is enough to make it run. However, if you place this library in
+-- Simply `require`ing this library is enough to make it run. However, if you place this library in
 -- a variable, you can get access to functions and tools that allow for generating pre-build blend
 -- callbacks or creating your own blend callbacks.
 --
@@ -19,13 +19,14 @@
 -- descriptions of each function, method, and field in this library.
 
 local ID = "GSAnimBlend"
-local VER = "1.7.3"
-local FIG = {"0.1.0-rc.9", "0.1.0"}
+local VER = "1.9.0"
+local FIG = {"0.1.0-rc.14", "0.1.1"}
 
+---@type boolean, Lib.GS.AnimBlend
 local s, this = pcall(function()
-  --|==================================================================================================================|--
-  --|=====|| SCRIPT ||=================================================================================================|--
-  --||=:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:=:==:=:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:=||--
+  --|================================================================================================================|--
+  --|=====|| SCRIPT ||===============================================================================================|--
+  --||==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==||--
 
   -- Localize Lua basic
   local getmetatable = getmetatable
@@ -61,7 +62,7 @@ local s, this = pcall(function()
   ---This library is used to allow prewrite-like animation blending with one new feature with infinite
   ---possibility added on top.  
   ---Any fields, functions, and methods injected by this library will be prefixed with
-  ---**[GS AnimBlend Library]** in their description
+  ---**[GS&nbsp;AnimBlend&nbsp;Library]** in their description.
   ---
   ---If this library is required without being stored to a variable, it will automatically set up the
   ---blending features.  
@@ -130,9 +131,9 @@ local s, this = pcall(function()
   }
 
   function chk.badarg(i, name, got, exp, opt)
+    if opt and got == nil then return true end
     local gotT = type(got)
     local gotType = chk.types[gotT] or "userdata"
-    if opt and gotType == "nil" then return true end
 
     local expType = chk.types[exp] or "userdata"
     if gotType ~= expType then
@@ -150,8 +151,10 @@ local s, this = pcall(function()
     return true
   end
 
-  function chk.badnum(i, name, got)
-    if type(got) ~= "number" then
+  function chk.badnum(i, name, got, opt)
+    if opt and got == nil then
+      return true
+    elseif type(got) ~= "number" then
       local gotType = chk.types[type(got)] or "userdata"
       return false, ("bad argument #%s to '%s' (number expected, got %s)"):format(i, name, gotType)
     elseif got ~= got or m_abs(got) == m_huge then
@@ -181,7 +184,7 @@ local s, this = pcall(function()
   })
 
   local animNum = 0
-  local function trackAnimation(anim)
+  for _, anim in ipairs(animations:getAnimations()) do
     local blend = anim:getBlend()
     local len = anim:getLength()
     local lenSane = makeSane(len, false)
@@ -189,7 +192,8 @@ local s, this = pcall(function()
     local tID = "blendAnim_" .. animNum
 
     animData[anim] = {
-      blendTime = 0,
+      blendTimeIn = 0,
+      blendTimeOut = 0,
       blend = blend,
       blendSane = makeSane(blend, 0),
       length = lenSane,
@@ -199,30 +203,16 @@ local s, this = pcall(function()
 
     _ENVMT.GSLib_triggerBlend[tID] = function() if anim:getLoop() == "ONCE" then anim:stop() end end
 
-    if lenSane then
-      if anim.newCode then
-        anim:newCode(m_max(lenSane - tPass, 0), blendCommand:format(tID))
-      else
-        anim:addCode(m_max(lenSane - tPass, 0), blendCommand:format(tID))
-      end
-    end
+    if lenSane then anim:newCode(m_max(lenSane - tPass, 0), blendCommand:format(tID)) end
 
     animNum = animNum + 1
-  end
-
-  ---@compat <=rc.12
-  if type(animations) == "table" then
-    for _, model in pairs(animations) do
-      for _, anim in pairs(model) do trackAnimation(anim) end
-    end
-  else -- rc13
-    for _, anim in ipairs(animations:getAnimations()) do trackAnimation(anim) end
   end
 
 
   -----============================ PREPARE METATABLE MODIFICATIONS =============================-----
 
   local animation_mt = figuraMetatables.Animation
+  local animationapi_mt = figuraMetatables.AnimationAPI
 
   local ext_Animation = next(animData)
   if not ext_Animation then
@@ -245,6 +235,7 @@ local s, this = pcall(function()
 
   local _animationIndex = animation_mt.__index
   local _animationNewIndex = animation_mt.__newindex or rawset
+  local _animationapiIndex = animationapi_mt.__index
 
   local animPlay = ext_Animation.play
   local animStop = ext_Animation.stop
@@ -254,10 +245,12 @@ local s, this = pcall(function()
   local animLength = ext_Animation.length
   local animGetPlayState = ext_Animation.getPlayState
   local animGetBlend = ext_Animation.getBlend
+  ---@diagnostic disable-next-line: deprecated
   local animIsPlaying = ext_Animation.isPlaying
-  local animIsPaused = ext_Animation.isPaused
   ---@diagnostic disable-next-line: undefined-field
-  local animNewCode = ext_Animation.newCode or ext_Animation.addCode
+  local animIsPaused = ext_Animation.isPaused
+  local animNewCode = ext_Animation.newCode
+  local animapiGetPlaying = animations.getPlaying
 
   ---Contains the old functions, just in case you need direct access to them again.
   ---
@@ -279,7 +272,9 @@ local s, this = pcall(function()
 
     blend = animBlend,
     length = animLength,
-    playing = ext_Animation.playing
+    playing = ext_Animation.playing,
+
+    api_getPlaying = animapiGetPlaying
   }
 
 
@@ -334,7 +329,7 @@ local s, this = pcall(function()
     blendState.callbackState = {
       anim = anim,
       time = 0,
-      max = time or data.blendTime,
+      max = time or (starting and data.blendTimeIn or data.blendTimeOut),
       progress = 0,
       from = from or blendSane,
       to = to or blendSane,
@@ -504,26 +499,17 @@ local s, this = pcall(function()
     end
   end
 
-  ---@type Lib.GS.AnimBlend.blendCallback
-  local function instantCallback(state, data)
-    state.time = state.max
-    state.progress = 1
-    state.done = true
-    (state.starting and animPlay or animStop)(state.anim)
-    animBlend(state.anim, data.blend)
-    blending[state.anim] = nil
-  end
-
   ---Generates a callback that plays one callback while blending in and another callback while blending out.
   ---
   ---If a string is given instead of a callback, it is treated as the name of a curve found in
   ---`<GSAnimBlend>.callbackCurves`.  
-  ---If `false` is given, blending will not be done at all. (As if `blendTime` was `0`.)  
   ---If `nil` is given, the default callback is used.
-  ---@param blend_in? Lib.GS.AnimBlend.blendCallback | Lib.GS.AnimBlend.curve | false
-  ---@param blend_out? Lib.GS.AnimBlend.blendCallback | Lib.GS.AnimBlend.curve | false
+  ---@param blend_in? Lib.GS.AnimBlend.blendCallback | Lib.GS.AnimBlend.curve
+  ---@param blend_out? Lib.GS.AnimBlend.blendCallback | Lib.GS.AnimBlend.curve
   ---@return Lib.GS.AnimBlend.blendCallback
   function callbackGenerators.dualBlend(blend_in, blend_out)
+    -- The dumbass check is a bit further down.
+
     local tbin, tbout = type(blend_in), type(blend_out)
     local infunc, outfunc = blend_in, blend_out
     if tbin == "string" then
@@ -531,8 +517,6 @@ local s, this = pcall(function()
       if not infunc then error("bad argument #1 to 'dualBlend' ('" .. blend_in .. "' is not a valid curve)", 2) end
     elseif blend_in == nil then
       infunc = this.defaultCallback
-    elseif blend_in == false then
-      infunc = instantCallback
     elseif tbin == "table" then
       -- Because some dumbass won't read the instructions...
       ---@diagnostic disable-next-line: undefined-field
@@ -552,8 +536,6 @@ local s, this = pcall(function()
       if not outfunc then error("bad argument #2 to 'dualBlend' ('" .. blend_in .. "' is not a valid curve)", 2) end
     elseif blend_out == nil then
       outfunc = this.defaultCallback
-    elseif blend_out == false then
-      outfunc = instantCallback
     elseif tbout == "table" then
       local mt = getmetatable(blend_out)
       if not (mt and mt.__call) then
@@ -764,46 +746,49 @@ local s, this = pcall(function()
       elseif to ~= "table" then
         error("bad argument #5 to 'bezierEasing' (table expected, got " .. to .. ")")
       else
+        local safe = this.safe
         local oni = options.newton_iters
         if oni == nil then
           options.newton_iters = default_newton_iters
-        else
+        elseif safe then
           assert(chk.badnum('5["newton_iters"]', "bezierEasing", oni))
         end
 
         local onm = options.newton_minslope
         if onm == nil then
           options.newton_minslope = default_newton_minslope
-        else
+        elseif safe then
           assert(chk.badnum('5["newton_minslope"]', "bezierEasing", onm))
         end
 
         local osp = options.subdiv_prec
         if osp == nil then
           options.subdiv_prec = default_subdiv_prec
-        else
+        elseif safe then
           assert(chk.badnum('5["subdiv_prec"]', "bezierEasing", osp))
         end
 
         local osi = options.subdiv_iters
         if osi == nil then
           options.subdiv_iters = default_subdiv_iters
-        else
+        elseif safe then
           assert(chk.badnum('5["subdiv_iters"]', "bezierEasing", osi))
         end
 
         local oss = options.sample_size
         if oss == nil then
           options.sample_size = default_sample_size
-        else
+        elseif safe then
           assert(chk.badnum('5["sample_size"]', "bezierEasing", oss))
         end
       end
 
-      chk.badnum(1, "bezierEasing", x1)
-      chk.badnum(2, "bezierEasing", y1)
-      chk.badnum(3, "bezierEasing", x2)
-      chk.badnum(4, "bezierEasing", y2)
+      if this.safe then
+        chk.badnum(1, "bezierEasing", x1)
+        chk.badnum(2, "bezierEasing", y1)
+        chk.badnum(3, "bezierEasing", x2)
+        chk.badnum(4, "bezierEasing", y2)
+      end
 
       if x1 > 1 or x1 < 0 then
         error("bad argument #1 to 'bezierEasing' (value out of [0, 1] range)", 2)
@@ -863,7 +848,7 @@ local s, this = pcall(function()
       local ftime = tl[1].time
       if ftime ~= 0 then error("error in keyframe #1: timeline does not start at 0 (got " .. ftime .. ")") end
       for i, kf in ipairs(tl) do
-        assert(chk.badnum('1[" .. i .. "]["time"]', "timeline", kf.time))
+        assert(chk.badnum("1[" .. i .. ']["time"]', "timeline", kf.time))
         if kf.time <= time then
           error(
             "error in keyframe #" .. i ..
@@ -871,10 +856,10 @@ local s, this = pcall(function()
           )
         end
 
-        if kf.min then assert(chk.badnum('1[" .. i .. "]["min"]', "timeline", kf.min)) end
-        if kf.max then assert(chk.badnum('1[" .. i .. "]["max"]', "timeline", kf.max)) end
+        if kf.min then assert(chk.badnum("1[" .. i .. ']["min"]', "timeline", kf.min)) end
+        if kf.max then assert(chk.badnum("1[" .. i .. ']["max"]', "timeline", kf.max)) end
 
-        assert(chk.badarg('1[" .. i .. "]["func"]', "timeline", kf.func, "function"), true)
+        assert(chk.badarg("1[" .. i .. ']["func"]', "timeline", kf.func, "function"), true)
       end
     end
 
@@ -885,7 +870,7 @@ local s, this = pcall(function()
       else
         ---@type Lib.GS.AnimBlend.tlKeyframe, Lib.GS.AnimBlend.tlKeyframe
         local kf, nextkf
-        for i, _kf in ipairs(tl) do
+        for _, _kf in ipairs(tl) do
           if _kf.time > state.progress then
             if _kf.time < 1 then nextkf = _kf end
             break
@@ -935,8 +920,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = 1 - m_cos((state.progress * m_pi) * 0.5)
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = (1 - m_cos(state.progress * m_pi * 0.5)) --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (1 - m_cos(state.progress * m_pi * 0.5))
+      )
     end
   end
 
@@ -950,8 +939,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = m_sin((state.progress * m_pi) * 0.5)
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = (m_sin(state.progress * m_pi * 0.5)) --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (m_sin(state.progress * m_pi * 0.5))
+      )
     end
   end
 
@@ -965,8 +958,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = -(m_cos(state.progress * m_pi) - 1) * 0.5
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = -(m_cos(state.progress * m_pi) - 1) * 0.5 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (-(m_cos(state.progress * m_pi) - 1) * 0.5)
+      )
     end
   end
 
@@ -980,8 +977,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = state.progress ^ 2
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = state.progress ^ 2 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (state.progress ^ 2)
+      )
     end
   end
 
@@ -995,8 +996,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = 1 - (1 - state.progress) ^ 2
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = 1 - (1 - state.progress) ^ 2 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (1 - (1 - state.progress) ^ 2)
+      )
     end
   end
 
@@ -1010,11 +1015,20 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
-      local prog = x < 0.5
-        and 2 * x ^ 2
-        or 1 - (-2 * x + 2) ^ 2 * 0.5
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      -- local prog =                    --
+      --   x < 0.5                       --
+      --   and 2 * x ^ 2                 --
+      --   or 1 - (-2 * x + 2) ^ 2 * 0.5 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          x < 0.5
+          and 2 * x ^ 2
+          or 1 - (-2 * x + 2) ^ 2 * 0.5
+        )
+      )
     end
   end
 
@@ -1028,8 +1042,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = state.progress ^ 3
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = state.progress ^ 3 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (state.progress ^ 3)
+      )
     end
   end
 
@@ -1043,8 +1061,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = 1 - (1 - state.progress) ^ 3
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = 1 - (1 - state.progress) ^ 3 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (1 - (1 - state.progress) ^ 3)
+      )
     end
   end
 
@@ -1058,11 +1080,20 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
-      local prog = x < 0.5
-        and 4 * x ^ 3
-        or 1 - (-2 * x + 2) ^ 3 * 0.5
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      -- local prog =                    --
+      --   x < 0.5                       --
+      --   and 4 * x ^ 3                 --
+      --   or 1 - (-2 * x + 2) ^ 3 * 0.5 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          x < 0.5
+          and 4 * x ^ 3
+          or 1 - (-2 * x + 2) ^ 3 * 0.5
+        )
+      )
     end
   end
 
@@ -1076,8 +1107,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = state.progress ^ 4
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = state.progress ^ 4 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (state.progress ^ 4)
+      )
     end
   end
 
@@ -1091,8 +1126,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = 1 - (1 - state.progress) ^ 4
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = 1 - (1 - state.progress) ^ 4 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (1 - (1 - state.progress) ^ 4)
+      )
     end
   end
 
@@ -1106,11 +1145,20 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
-      local prog = x < 0.5
-        and 8 * x ^ 4
-        or 1 - (-2 * x + 2) ^ 4 * 0.5
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      --local prog =                    --
+      --  x < 0.5                       --
+      --  and 8 * x ^ 4                 --
+      --  or 1 - (-2 * x + 2) ^ 4 * 0.5 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          x < 0.5
+          and 8 * x ^ 4
+          or 1 - (-2 * x + 2) ^ 4 * 0.5
+        )
+      )
     end
   end
 
@@ -1124,8 +1172,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = state.progress ^ 5
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = state.progress ^ 5 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (state.progress ^ 5)
+      )
     end
   end
 
@@ -1139,8 +1191,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = 1 - (1 - state.progress) ^ 5
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = 1 - (1 - state.progress) ^ 5 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (1 - (1 - state.progress) ^ 5)
+      )
     end
   end
 
@@ -1154,11 +1210,20 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
-      local prog = x < 0.5
-        and 16 * x ^ 5
-        or 1 - (-2 * x + 2) ^ 5 * 0.5
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      -- local prog =                    --
+      --   x < 0.5                       --
+      --   and 16 * x ^ 5                --
+      --   or 1 - (-2 * x + 2) ^ 5 * 0.5 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          x < 0.5
+          and 16 * x ^ 5
+          or 1 - (-2 * x + 2) ^ 5 * 0.5
+        )
+      )
     end
   end
 
@@ -1172,11 +1237,20 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
-      local prog = x == 0
-        and 0
-        or 2 ^ (10 * x - 10)
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      -- local prog =           --
+      --   x == 0               --
+      --   and 0                --
+      --   or 2 ^ (10 * x - 10) --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          x == 0
+          and 0
+          or 2 ^ (10 * x - 10)
+        )
+      )
     end
   end
 
@@ -1190,11 +1264,20 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
-      local prog = x == 1
-        and 1
-        or 1 - 2 ^ (-10 * x)
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      -- local prog =           --
+      --   x == 1               --
+      --   and 1                --
+      --   or 1 - 2 ^ (-10 * x) --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          x == 1
+          and 1
+          or 1 - 2 ^ (-10 * x)
+        )
+      )
     end
   end
 
@@ -1208,12 +1291,20 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
-      local prog = x == 0 and 0
-        or x == 1 and 1
-        or x < 0.5 and 2 ^ (20 * x - 10) * 0.5
-        or (2 - 2 ^ (-20 * x + 10)) * 0.5
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      -- local prog =                             --
+      --   (x == 0 or x == 1) and x               --
+      --   or x < 0.5 and 2 ^ (20 * x - 10) * 0.5 --
+      --   or (2 - 2 ^ (-20 * x + 10)) * 0.5      --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          (x == 0 or x == 1) and x
+          or x < 0.5 and 2 ^ (20 * x - 10) * 0.5
+          or (2 - 2 ^ (-20 * x + 10)) * 0.5
+        )
+      )
     end
   end
 
@@ -1227,8 +1318,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = 1 - m_sqrt(1 - state.progress ^ 2)
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = 1 - m_sqrt(1 - state.progress ^ 2) --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (1 - m_sqrt(1 - state.progress ^ 2))
+      )
     end
   end
 
@@ -1242,8 +1337,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local prog = m_sqrt(1 - (state.progress - 1) ^ 2)
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      -- local prog = m_sqrt(1 - (state.progress - 1) ^ 2) --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * m_sqrt(1 - (state.progress - 1) ^ 2)
+      )
     end
   end
 
@@ -1257,11 +1356,20 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
-      local prog = x < 0.5
-        and (1 - m_sqrt(1 - (2 * x) ^ 2)) * 0.5
-        or (m_sqrt(1 - (-2 * x + 2) ^ 2) + 1) * 0.5
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      -- local prog =                                  --
+      --   x < 0.5                                     --
+      --   and (1 - m_sqrt(1 - (2 * x) ^ 2)) * 0.5     --
+      --   or (m_sqrt(1 - (-2 * x + 2) ^ 2) + 1) * 0.5 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          x < 0.5
+          and (1 - m_sqrt(1 - (2 * x) ^ 2)) * 0.5
+          or (m_sqrt(1 - (-2 * x + 2) ^ 2) + 1) * 0.5
+        )
+      )
     end
   end
 
@@ -1275,11 +1383,15 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local x = state.progress --[[
-      magic c1 <1.70158> = 1.70158
-      magic c2 <2.70158> = c1 + 1  ]]
-      local prog = 2.70158 * x ^ 3 - 1.70158 * x ^ 2
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      local x = state.progress
+      -- magic c1 <1.70158> = 1.70158                   --
+      -- magic c2 <2.70158> = c1 + 1                    --
+      -- local prog = 2.70158 * x ^ 3 - 1.70158 * x ^ 2 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (2.70158 * x ^ 3 - 1.70158 * x ^ 2)
+      )
     end
   end
 
@@ -1293,11 +1405,15 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local x = state.progress - 1 --[[
-      magic c1 <1.70158> = 1.70158
-      magic c2 <2.70158> = c1 + 1  ]]
-      local prog = 1 + 2.70158 * x ^ 3 + 1.70158 * x ^ 2
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      local x = state.progress - 1
+      -- magic c1 <1.70158> = 1.70158                       --
+      -- magic c2 <2.70158> = c1 + 1                        --
+      -- local prog = 1 + 2.70158 * x ^ 3 + 1.70158 * x ^ 2 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (1 + 2.70158 * x ^ 3 + 1.70158 * x ^ 2)
+      )
     end
   end
 
@@ -1311,15 +1427,24 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
-      local x2 = 2 * x --[[
-      magic c1 <1.70158>   = 1.70158
-      magic c2 <2.5949095> = c1 * 1.525
-      magic c3 <3.5949095> = c2 + 1     ]]
-      local prog = x < 0.5
-        and (x2 ^ 2 * (3.5949095 * x2 - 2.5949095)) * 0.5
-        or ((x2 - 2) ^ 2 * (3.5949095 * (x2 - 2) + 2.5949095) + 2) * 0.5
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local x2 = x * 2
+      -- magic c1 <1.70158>   = 1.70158                                     --
+      -- magic c2 <2.5949095> = c1 * 1.525                                  --
+      -- magic c3 <3.5949095> = c2 + 1                                      --
+      -- local prog =                                                       --
+      --   x < 0.5                                                          --
+      --   and (x2 ^ 2 * (3.5949095 * x2 - 2.5949095)) * 0.5                --
+      --   or ((x2 - 2) ^ 2 * (3.5949095 * (x2 - 2) + 2.5949095) + 2) * 0.5 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          x < 0.5
+          and (x2 ^ 2 * (3.5949095 * x2 - 2.5949095)) * 0.5
+          or ((x2 - 2) ^ 2 * (3.5949095 * (x2 - 2) + 2.5949095) + 2) * 0.5
+        )
+      )
     end
   end
 
@@ -1333,10 +1458,18 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
-      local prog = (x == 0 or x == 1) and x
-        or -(2 ^ (10 * x - 10)) * m_sin((x * 10 - 10.75) * m_pi / 1.5)
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      -- local prog =                                                     --
+      --   (x == 0 or x == 1) and x                                       --
+      --   or -(2 ^ (10 * x - 10)) * m_sin((x * 10 - 10.75) * m_pi / 1.5) --
+      animBlend(
+        state.anim, 
+        from + (state.to - from) * (
+          (x == 0 or x == 1) and x
+          or -(2 ^ (10 * x - 10)) * m_sin((x * 10 - 10.75) * m_pi / 1.5)
+        )
+      )
     end
   end
 
@@ -1350,10 +1483,18 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
-      local prog = (x == 0 or x == 1) and x
-        or 2 ^ (-10 * x) * m_sin((x * 10 - 0.75) * m_pi / 1.5) + 1
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      -- local prog =                                                 --
+      --   (x == 0 or x == 1) and x                                   --
+      --   or 2 ^ (-10 * x) * m_sin((x * 10 - 0.75) * m_pi / 1.5) + 1 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          (x == 0 or x == 1) and x
+          or 2 ^ (-10 * x) * m_sin((x * 10 - 0.75) * m_pi / 1.5) + 1
+        )
+      )
     end
   end
 
@@ -1367,11 +1508,20 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
-      local prog = (x == 0 or x == 1) and x
-        or x < 0.5 and -(2 ^ (20 * x - 10) * m_sin((20 * x - 11.125) * m_pi / 2.25)) * 0.5
-        or (2 ^ (-20 * x + 10) * m_sin((20 * x - 11.125) * m_pi / 2.25)) * 0.5 + 1
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      -- local prog =                                                                   --
+      --   (x == 0 or x == 1) and x                                                     --
+      --   or x < 0.5 and -(2 ^ (x * 20 - 10) * m_sin((x * 20 - 11.125) * m_pi / 2.25)) * 0.5 --
+      --   or (2 ^ (-x * 20 + 10) * m_sin((x * 20 - 11.125) * m_pi / 2.25)) * 0.5 + 1         --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          (x == 0 or x == 1) and x
+          or x < 0.5 and -(2 ^ (x * 20 - 10) * m_sin((x * 20 - 11.125) * m_pi / 2.25)) * 0.5
+          or (2 ^ (-x * 20 + 10) * m_sin((x * 20 - 11.125) * m_pi / 2.25)) * 0.5 + 1
+        )
+      )
     end
   end
 
@@ -1385,14 +1535,28 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local x = 1 - state.progress --[[
-      magic c1 <7.5625> = 7.5625
-      magic c2 <2.75>   = 2.75   ]]
-      local prog = 1 - (x < 1 / 2.75 and 7.5625 * x ^ 2
-        or x < 2 / 2.75 and 7.5625 * (x - 1.5 / 2.75) ^ 2 + 0.75
-        or x < 2.5 / 2.75 and 7.5625 * (x - 2.25 / 2.75) ^ 2 + 0.9375
-        or 7.5625 * (x - 2.625 / 2.75) ^ 2 + 0.984375)
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      local x = 1 - state.progress
+      -- magic c1 <7.5625> = 7.5625                                        --
+      -- magic c2 <2.75>   = 2.75                                          --
+      -- local prog =                                                      --
+      --   1 - (                                                           --
+      --     x < 1 / 2.75 and 7.5625 * x ^ 2                               --
+      --     or x < 2 / 2.75 and 7.5625 * (x - 1.5 / 2.75) ^ 2 + 0.75      --
+      --     or x < 2.5 / 2.75 and 7.5625 * (x - 2.25 / 2.75) ^ 2 + 0.9375 --
+      --     or 7.5625 * (x - 2.625 / 2.75) ^ 2 + 0.984375                 --
+      --   )                                                               --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          1 - (
+            x < 1 / 2.75 and 7.5625 * x ^ 2
+            or x < 2 / 2.75 and 7.5625 * (x - 1.5 / 2.75) ^ 2 + 0.75
+            or x < 2.5 / 2.75 and 7.5625 * (x - 2.25 / 2.75) ^ 2 + 0.9375
+            or 7.5625 * (x - 2.625 / 2.75) ^ 2 + 0.984375
+          )
+        )
+      )
     end
   end
 
@@ -1406,14 +1570,24 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      local x = state.progress --[[
-      magic c1 <7.5625> = 7.5625
-      magic c2 <2.75>   = 2.75   ]]
-      local prog = x < 1 / 2.75 and 7.5625 * x ^ 2
-        or x < 2 / 2.75 and 7.5625 * (x - 1.5 / 2.75) ^ 2 + 0.75
-        or x < 2.5 / 2.75 and 7.5625 * (x - 2.25 / 2.75) ^ 2 + 0.9375
-        or 7.5625 * (x - 2.625 / 2.75) ^ 2 + 0.984375
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      local from = state.from
+      local x = state.progress
+      -- magic c1 <7.5625> = 7.5625                                      --
+      -- magic c2 <2.75>   = 2.75                                        --
+      -- local prog =                                                    --
+      --   x < 1 / 2.75 and 7.5625 * x ^ 2                               --
+      --   or x < 2 / 2.75 and 7.5625 * (x - 1.5 / 2.75) ^ 2 + 0.75      --
+      --   or x < 2.5 / 2.75 and 7.5625 * (x - 2.25 / 2.75) ^ 2 + 0.9375 --
+      --   or 7.5625 * (x - 2.625 / 2.75) ^ 2 + 0.984375                 --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * (
+          x < 1 / 2.75 and 7.5625 * x ^ 2
+          or x < 2 / 2.75 and 7.5625 * (x - 1.5 / 2.75) ^ 2 + 0.75
+          or x < 2.5 / 2.75 and 7.5625 * (x - 2.25 / 2.75) ^ 2 + 0.9375
+          or 7.5625 * (x - 2.625 / 2.75) ^ 2 + 0.984375
+        )
+      )
     end
   end
 
@@ -1427,17 +1601,31 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
+      local from = state.from
       local x = state.progress
+      local s = x < 0.5 and -1 or 1
       x = x < 0.5 and 1 - 2 * x or 2 * x - 1
-      local s = x < 0.5 and -1 or 1 --[[
-      magic c1 <7.5625> = 7.5625
-      magic c2 <2.75>   = 2.75   ]]
-      -- What the fuck.
-      local prog = (1 + s * (x < 1 / 2.75 and 7.5625 * x ^ 2
-        or x < 2 / 2.75 and 7.5625 * (x - 1.5 / 2.75) ^ 2 + 0.75
-        or x < 2.5 / 2.75 and 7.5625 * (x - 2.25 / 2.75) ^ 2 + 0.9375
-        or 7.5625 * (x - 2.625 / 2.75) ^ 2 + 0.984375)) * 0.5
-      animBlend(state.anim, m_lerp(state.from, state.to, prog))
+      -- magic c1 <7.5625> = 7.5625
+      -- magic c2 <2.75>   = 2.75
+      -- local prog =
+      --   (1 + s * (
+      --     x < 1 / 2.75 and 7.5625 * x ^ 2
+      --     or x < 2 / 2.75 and 7.5625 * (x - 1.5 / 2.75) ^ 2 + 0.75
+      --     or x < 2.5 / 2.75 and 7.5625 * (x - 2.25 / 2.75) ^ 2 + 0.9375
+      --     or 7.5625 * (x - 2.625 / 2.75) ^ 2 + 0.984375
+      --   )) * 0.5
+      animBlend(
+        state.anim,
+        -- What the fuck.
+        from + (state.to - from) * (
+          (1 + s * (
+            x < 1 / 2.75 and 7.5625 * x ^ 2
+            or x < 2 / 2.75 and 7.5625 * (x - 1.5 / 2.75) ^ 2 + 0.75
+            or x < 2.5 / 2.75 and 7.5625 * (x - 2.25 / 2.75) ^ 2 + 0.9375
+            or 7.5625 * (x - 2.625 / 2.75) ^ 2 + 0.984375
+          )) * 0.5
+        )
+      )
     end
   end
 
@@ -1454,7 +1642,8 @@ local s, this = pcall(function()
   local last_delta = 0
   local allowed_contexts = {
     RENDER = true,
-    FIRST_PERSON = true
+    FIRST_PERSON = true,
+    OTHER = true
   }
 
   events.TICK:register(function()
@@ -1462,7 +1651,7 @@ local s, this = pcall(function()
   end, "GSAnimBlend:Tick_TimeTicker")
 
   events.RENDER:register(function(delta, ctx)
-    if (ctx and not allowed_contexts[ctx]) or (delta == last_delta and ticker == 0) then return end
+    if not allowed_contexts[ctx] or (delta == last_delta and ticker == 0) then return end
     local elapsed_time = ticker + (delta - last_delta)
     ticker = 0
     for anim in pairs(blending) do
@@ -1472,7 +1661,7 @@ local s, this = pcall(function()
       if not state.paused then
         local cbs = state.callbackState
         state.time = state.time + elapsed_time
-        if not state.max then cbs.max = data.blendTime end
+        if not state.max then cbs.max = state.starting and data.blendTimeIn or data.blendTimeOut end
         if not state.from then
           cbs.from = data.blendSane
         elseif not state.to then
@@ -1547,7 +1736,7 @@ local s, this = pcall(function()
       local time = cbs.max * cbs.progress
       this.blend(self, time, animGetBlend(self), nil, true)
       return
-    elseif animData[self].blendTime == 0 or animGetPlayState(self) ~= "STOPPED" then
+    elseif animData[self].blendTimeIn == 0 or animGetPlayState(self) ~= "STOPPED" then
       return animPlay(self)
     end
 
@@ -1565,7 +1754,7 @@ local s, this = pcall(function()
       local time = cbs.max * cbs.progress
       this.blend(self, time, animGetBlend(self), 0, false)
       return
-    elseif animData[self].blendTime == 0 or animGetPlayState(self) == "STOPPED" then
+    elseif animData[self].blendTimeOut == 0 or animGetPlayState(self) == "STOPPED" then
       return animStop(self)
     end
 
@@ -1602,7 +1791,8 @@ local s, this = pcall(function()
 
   function animationMethods:getBlendTime()
     if this.safe then assert(chk.badarg(1, "getBlendTime", self, "Animation")) end
-    return animData[self].blendTime
+    local data = animData[self]
+    return data.blendTimeIn, data.blendTimeOut
   end
 
   function animationMethods:isBlending()
@@ -1637,14 +1827,16 @@ local s, this = pcall(function()
 
   ---===== SETTERS =====---
 
-  function animationMethods:setBlendTime(time)
-    if time == nil then time = 0 end
+  function animationMethods:setBlendTime(time_in, time_out)
+    if time_in == nil then time_in = 0 end
     if this.safe then
       assert(chk.badarg(1, "setBlendTime", self, "Animation"))
-      assert(chk.badnum(2, "setBlendTime", time))
+      assert(chk.badnum(2, "setBlendTime", time_in))
+      assert(chk.badnum(3, "setBlendTime", time_out, true))
     end
 
-    animData[self].blendTime = m_max(time, 0)
+    animData[self].blendTimeIn = m_max(time_in, 0)
+    animData[self].blendTimeOut = m_max(time_out or time_in, 0)
     return self
   end
 
@@ -1712,6 +1904,8 @@ local s, this = pcall(function()
   animationMethods.playing = animationMethods.setPlaying
 
 
+  ---===== METAMETHODS =====---
+
   function animation_mt:__index(key)
     if animationGetters[key] then
       return animationGetters[key](self)
@@ -1731,12 +1925,37 @@ local s, this = pcall(function()
     end
   end
 
+
+  -----============================== ANIMATION API MODIFICATIONS ===============================-----
+
+  if animationapi_mt then
+    local apiMethods = {}
+
+    function apiMethods:getPlaying(ignore_blending)
+      if this.safe then assert(chk.badarg(1, "getPlaying", self, "AnimationAPI")) end
+      ---@cast animapiGetPlaying function
+      if ignore_blending then return animapiGetPlaying(animations) end
+      local anims = {}
+      for _, anim in ipairs(animations:getAnimations()) do
+        ---@diagnostic disable-next-line: deprecated
+        if anim:isPlaying() then anims[#anims+1] = anim end
+      end
+
+      return anims
+    end
+
+    function animationapi_mt:__index(key)
+      return apiMethods[key] or _animationapiIndex(self, key)
+    end
+  end
+
+
   return setmetatable(this, thismt)
 end)
 
 if s then
   return this
-else
+else -- This is *all* error handling.
   ---@cast this string
   local e_msg, e_stack = this:match("^(.-)\nstack traceback:\n(.*)$")
 
@@ -1751,8 +1970,8 @@ else
       else
         skip_next = false
       end
-    -- If the level *is* a Java level and it contains the pcall, remove both it and the level above.
     elseif line:match("in function 'pcall'") then
+      -- If the level *is* a Java level and it contains the pcall, remove both it and the level above.
       stack_lines[#stack_lines] = stack_lines[#stack_lines]:gsub("in function %b<>", "in protected chunk")
       skip_next = true
     end
@@ -1764,17 +1983,25 @@ else
   local extra_reason = ""
 
   if FIG[1] and cmp(ver, FIG[1]) == -1 then
-    extra_reason = ("\n§6§oYour Figura version (%s) is below the recommended minimum of %s§r"):format(ver, FIG[1])
+    extra_reason = ("\n§oYour Figura version (%s) is below the recommended minimum of %s§r"):format(ver, FIG[1])
   elseif FIG[2] and cmp(ver, FIG[2]) == 1 then
-    extra_reason = ("\n§6§oYour Figura version (%s) is above the recommended maximum of %s§r"):format(ver, FIG[2])
+    extra_reason = ("\n§oYour Figura version (%s) is above the recommended maximum of %s§r"):format(ver, FIG[2])
   end
 
-  local info_dump = ("§7INFO: §3%s §dv%s §8[§b%s§8]")
-    :format(ID, VER, ver)
-
   error(
-    ("'GSAnimBlend' failed to load%s\n§rcaused by:\n  §4%s\n  §4stack traceback:\n%s\n%s§r")
-      :format(extra_reason, e_msg, e_stack, info_dump),
+    (
+      "'%s' failed to load\z
+       \n§7INFO: %s v%s | %s§r%s\z
+       \ncaused by:\z
+       \n  §4%s\z
+       \n  §4stack traceback:\z
+       \n%s§r"
+    ):format(
+      ID,
+      ID, VER, ver,
+      extra_reason,
+      e_msg, e_stack
+    ),
     2
   )
 end
@@ -1784,11 +2011,13 @@ end
 --||=:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:=:==:=:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:==:=||--
 
 ---@diagnostic disable: duplicate-set-field, duplicate-doc-field, duplicate-doc-alias
----@diagnostic disable: missing-return, unused-local, lowercase-global
+---@diagnostic disable: missing-return, unused-local, lowercase-global, unreachable-code
 
 ---@class Lib.GS.AnimBlend.AnimData
----The blending time of this animation in ticks.
----@field blendTime number
+---The blending-in time of this animation in ticks.
+---@field blendTimeIn number
+---The blending-out time of this animation in ticks.
+---@field blendTimeOut number
 ---The faked blend weight value of this animation.
 ---@field blend number
 ---The preferred blend weight that blending will use.
@@ -1926,7 +2155,7 @@ end
 ---@alias Lib.GS.AnimBlend.timeline Lib.GS.AnimBlend.tlKeyframe[]
 
 ---@alias Lib.GS.AnimBlend.curve string
----| "linear"           #
+---| "linear"           # The default blending curve. Goes from 0 to 1 without any fancy stuff.
 ---| "easeInSine"       # [Learn More...](https://easings.net/#easeInSine)
 ---| "easeOutSine"      # [Learn More...](https://easings.net/#easeOutSine)
 ---| "easeInOutSine"    # [Learn More...](https://easings.net/#easeInOutSine)
@@ -1982,8 +2211,8 @@ function Animation:restart(blend) end
 ---===== GETTERS =====---
 
 ---#### [GS AnimBlend Library]
----Gets the blending time of this animation in ticks.
----@return number
+---Gets the blending times of this animation in ticks.
+---@return number, number
 function Animation:getBlendTime() end
 
 ---#### [GS AnimBlend Library]
@@ -1996,11 +2225,14 @@ function Animation:isBlending() end
 
 ---#### [GS AnimBlend Library]
 ---Sets the blending time of this animation in ticks.
+---
+---If two values are given, the blending in and out times are set respectively.
 ---@generic self
 ---@param self self
----@param time number
+---@param time_in? number
+---@param time_out? number
 ---@return self
-function Animation:setBlendTime(time) end
+function Animation:setBlendTime(time_in, time_out) end
 
 ---#### [GS AnimBlend Library]
 ---Sets the blending callback of this animation.
@@ -2015,11 +2247,14 @@ function Animation:setOnBlend(func) end
 
 ---#### [GS AnimBlend Library]
 ---Sets the blending time of this animation in ticks.
+---
+---If two values are given, the blending in and out times are set respectively.
 ---@generic self
 ---@param self self
----@param time number
+---@param time_in? number
+---@param time_out? number
 ---@return self
-function Animation:blendTime(time) end
+function Animation:blendTime(time_in, time_out) end
 
 ---#### [GS AnimBlend Library]
 ---Sets the blending callback of this animation.
@@ -2029,3 +2264,14 @@ function Animation:blendTime(time) end
 ---@return self
 function Animation:onBlend(func) end
 
+
+---@class AnimationAPI
+local AnimationAPI
+
+---#### [GS AnimBlend Library]
+---Gets an array of every playing animation.
+---
+---Set `ignore_blending` to ignore animations that are currently blending.
+---@param ignore_blending? boolean
+---@return Animation[]
+function AnimationAPI:getPlaying(ignore_blending) end
