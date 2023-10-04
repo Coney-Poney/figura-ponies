@@ -31,7 +31,7 @@ local rightSwing, leftSwing = false, false
 local emote_switch = emote
 -----------for switch case-----------
 
-local GSBlend = require("gsAnimBlend") -- Instruction count goes brrrrr
+local GSBlend = require("GSAnimBlend") -- Instruction count goes brrrrr
 --GSBlend.safe = false -- turning this off crashes game when reload :D 
 
 -- Animations
@@ -155,7 +155,7 @@ events.TICK:register(function()
         end
     end
     
-    if not isOnGround and not isClimb and not isFlying then -- Jump Fall speed
+    if not isOnGround and not isClimb and not isFlying and not vehicle then -- Jump Fall speed
         if vel.y < 0 and vel.y > -0.375 and pose ~= "FALL_FLYING" then --0 for switching for jumping up to down
             if jump_switch ~= 0 and jump_switch == 2 then -- ONLY plays if jumpup is playing
                 jump_switch = 0
