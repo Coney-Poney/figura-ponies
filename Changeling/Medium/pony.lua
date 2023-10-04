@@ -16,7 +16,7 @@ Magic = config:load("Magic")
 Wings = config:load("Wings")
 
 -- ArmorAPI
-local kattArmor = require("kattArmor")
+local kattArmor = require("kattArmor")()
 
 local modelsponyRoot = models.pony.Root
 

@@ -5,8 +5,8 @@
 -- │ │   │ └─╴ │┌───┘ │   │ │ --
 -- │ └─┐ └─────┘└─────┘ ┌─┘ │ --
 -- └───┘                └───┘ --
----@module  "Animation Blend Library" <GSAnimBlend>
----@version v1.9.0
+---@module  "Animation Blending Library" <GSAnimBlend>
+---@version v1.9.2
 ---@see     GrandpaScout @ https://github.com/GrandpaScout
 -- Adds prewrite-like animation blending to the rewrite.
 -- Also includes the ability to modify how the blending works per-animation with blending callbacks.
@@ -19,8 +19,8 @@
 -- descriptions of each function, method, and field in this library.
 
 local ID = "GSAnimBlend"
-local VER = "1.9.0"
-local FIG = {"0.1.0-rc.14", "0.1.1"}
+local VER = "1.9.2"
+local FIG = {"0.1.0-rc.14", "0.1.2"}
 
 ---@type boolean, Lib.GS.AnimBlend
 local s, this = pcall(function()
@@ -70,6 +70,7 @@ local s, this = pcall(function()
   ---pre-built blending callbacks and creating custom blending callbacks.
   ---```lua
   ---require "···"
+  --- -- OR --
   ---local anim_blend = require "···"
   ---```
   ---@class Lib.GS.AnimBlend
@@ -343,6 +344,7 @@ local s, this = pcall(function()
 
     animBlend(anim, from or blendSane)
     animPlay(anim)
+    if starting then anim:setTime(anim:getOffset()) end
     animPause(anim)
 
     return blendState
@@ -904,7 +906,12 @@ local s, this = pcall(function()
       (state.starting and animPlay or animStop)(state.anim)
       animBlend(state.anim, data.blend)
     else
-      animBlend(state.anim, m_lerp(state.from, state.to, state.progress))
+      local from = state.from
+      -- local prog = state.progress --
+      animBlend(
+        state.anim,
+        from + (state.to - from) * state.progress
+      )
     end
   end
 
@@ -1957,7 +1964,7 @@ if s then
   return this
 else -- This is *all* error handling.
   ---@cast this string
-  local e_msg, e_stack = this:match("^(.-)\nstack traceback:\n(.*)$")
+  local e_msg, e_stack = string.match(this, "^(.-)\nstack traceback:\n(.*)$")
 
   -- Modify Stack
   local stack_lines = {}
