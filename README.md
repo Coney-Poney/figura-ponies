@@ -55,6 +55,6 @@ NOTE: every mesh within the "Hair" folder will be hidden upon wearing an helmet
 
 So you made your pony and satified with how it looks. Now you're almost done!
 
-Obviously, change the name in 'avatar.json' to your pony's name. Then you have to go into 'pony.lua' and there are two varibles on the top you want to change: "Magic" and Wings." Change them accordingly.
+Obviously, change the name in 'avatar.json' to your pony's name. Then you have to go into 'initValue.lua' and there are two varibles on the top you want to change: "Magic" and Wings." Change them accordingly.
 
 Now you have a Custom Pony!
