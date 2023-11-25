@@ -7,7 +7,7 @@
 --                                                --
 --================================================--
 
---v4.1.1
+--v4.1.3
 
 ---@alias KattArmor.ArmorPartID
 ---| '"Helmet"'
@@ -461,7 +461,6 @@ function events.TICK()
       if partData.prevMaterial and partData.prevMaterial.parts[partID] then
         for _, modelPart in ipairs(partData.prevMaterial.parts[partID]) do
           modelPart:setVisible(false)
-          print(modelPart)
         end
       end
 
