@@ -15,8 +15,6 @@ Thanks to GrandpaScout for Animation Blend Library
 
 Thanks to GNamimates for the code inspiration
 
-And Thanks to 'Fran' for making 'Figura,' the mod that made this possible in the first place!
-
 - Support and unique textures for all armor types.
    - Create 5.1 Compatablity for both diving sets
 - Togglable Horns and Wings
