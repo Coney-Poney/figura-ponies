@@ -58,8 +58,8 @@ elseif textures["pony.leather"] ~= nil then
     kattArmor.Materials.diamond:setTexture(textures["pony.diamond"])
     kattArmor.Materials.netherite:setTexture(textures["pony.netherite"])
     kattArmor.Materials.turtle:setTexture(textures["pony.turtle"])
-    kattArmor.Materials.copper_diving:setTexture(textures["Textures.copperdiving"])
-    kattArmor.Materials.netherite_diving:setTexture(textures["ponys.netheritediving"])
+    kattArmor.Materials.copper_diving:setTexture(textures["pony.diving"])
+    kattArmor.Materials.netherite_diving:setTexture(textures["pony.netheritediving"])
 end
 
 kattArmor.Materials.leather:addParts(
