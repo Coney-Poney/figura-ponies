@@ -48,7 +48,7 @@ if textures["Textures.leather"] ~= nil then --find texutre files
     kattArmor.Materials.diamond:setTexture(textures["Textures.diamond"])
     kattArmor.Materials.netherite:setTexture(textures["Textures.netherite"])
     kattArmor.Materials.turtle:setTexture(textures["Textures.turtle"])
-    kattArmor.Materials.copper_diving:setTexture(textures["Textures.copperdiving"])
+    kattArmor.Materials.copper_diving:setTexture(textures["Textures.diving"])
     kattArmor.Materials.netherite_diving:setTexture(textures["Textures.netheritediving"])
 elseif textures["pony.leather"] ~= nil then
     kattArmor.Materials.leather:setTexture(textures["pony.leather"])
