@@ -88,15 +88,13 @@ kattArmor.Materials[true]:addParts(kattArmor.Armor.Helmet,
     modelsponyRoot.body.neck.head.hair
 )
 
-function kattArmor.onChange(partID, part, item, prevItem)
+kattArmor.registerOnChange(function (partID, item)
     if item:getName() == ("Copper Backtank") then
-        part:setMaterial("copper_diving")
+        return "copper_diving"
     elseif item:getName() == ("Netherite Backtank") then
-        part:setMaterial("netherite_diving")
-    else
-        part:setMaterial()
+        return "netherite_diving"
     end
-end
+end)
 
 emote = 0
 
